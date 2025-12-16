@@ -5,6 +5,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using System.Collections.Generic;
 
 namespace Factorio
 {
@@ -21,12 +22,13 @@ namespace Factorio
         private int mapHeight = 6;
         private Player player;
         private DispatcherTimer gameLoopTimer;
-
-        // Состояние нажатых клавиш
+        private List<Resource> resources = new List<Resource>();
+        private Random random = new Random();
         private bool isUpPressed = false;
         private bool isDownPressed = false;
         private bool isLeftPressed = false;
         private bool isRightPressed = false;
+        private bool isMiningPressed = false;
 
         public MainWindow()
         {
@@ -43,7 +45,9 @@ namespace Factorio
             CreateTileMapToFillWindow();
             InitializePlayer();
             InitializeGameLoop();
+            SpawnInitialResources();
 
+            player.SetInventoryPanel(InventoryPanel);
             this.Focus();
         }
 
@@ -56,8 +60,6 @@ namespace Factorio
 
             double tileWidth = canvasWidth / mapWidth;
             double tileHeight = canvasHeight / mapHeight;
-
-            Random random = new Random();
 
             for (int row = 0; row < mapHeight; row++)
             {
@@ -93,7 +95,7 @@ namespace Factorio
         private void InitializeGameLoop()
         {
             gameLoopTimer = new DispatcherTimer();
-            gameLoopTimer.Interval = TimeSpan.FromMilliseconds(16); // ~60 FPS
+            gameLoopTimer.Interval = TimeSpan.FromMilliseconds(16);
             gameLoopTimer.Tick += GameLoop_Tick;
             gameLoopTimer.Start();
         }
@@ -102,6 +104,8 @@ namespace Factorio
         {
             UpdatePlayerMovement();
             player.UpdateAnimation();
+            player.UpdateMining(resources, isMiningPressed);
+            //RemoveDepletedResources();
         }
 
         private void UpdatePlayerMovement()
@@ -110,7 +114,6 @@ namespace Factorio
             double deltaY = 0;
             Direction direction = Direction.Down;
 
-            // Определяем направление движения
             if (isUpPressed && !isDownPressed)
             {
                 deltaY = -1;
@@ -133,20 +136,15 @@ namespace Factorio
                 direction = Direction.Right;
             }
 
-            // Комбинированное движение по диагонали
             if (Math.Abs(deltaX) > 0 && Math.Abs(deltaY) > 0)
             {
-                // Нормализуем вектор для диагонального движения
                 double length = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
                 deltaX /= length;
                 deltaY /= length;
-
-                // Для диагонали используем горизонтальное направление
                 if (deltaX < 0) direction = Direction.Left;
                 else if (deltaX > 0) direction = Direction.Right;
             }
 
-            // Если есть движение
             if (deltaX != 0 || deltaY != 0)
             {
                 player.Move(deltaX, deltaY, direction);
@@ -157,62 +155,130 @@ namespace Factorio
             }
         }
 
-        protected override void OnKeyDown(KeyEventArgs e)
+        private void SpawnInitialResources()
         {
-            base.OnKeyDown(e);
+            int resourceCount = 15;
+            for (int i = 0; i < resourceCount; i++)
+            {
+                SpawnRandomResource();
+            }
+        }
 
+        private void SpawnRandomResource()
+        {
+            double x = random.Next(50, (int)this.ActualWidth - 50);
+            double y = random.Next(50, (int)this.ActualHeight - 150);
+
+            double distanceToPlayer = Math.Sqrt(Math.Pow(x - player.X, 2) + Math.Pow(y - player.Y, 2));
+            if (distanceToPlayer < 100)
+            {
+                x = (x + 150) % (this.ActualWidth - 100);
+                y = (y + 150) % (this.ActualHeight - 200);
+            }
+
+            // Генерируем случайный тип ресурса (железо, медь или уголь)
+            ResourceType type = (ResourceType)random.Next(3); // 0=Iron, 1=Copper, 2=Coal
+            int amount = random.Next(5, 15);
+
+            Resource resource = new Resource(x, y, type, amount);
+            resource.AddToCanvas(GameCanvas);
+            resources.Add(resource);
+        }
+
+        private void RemoveDepletedResources()
+        {
+            for (int i = resources.Count - 1; i >= 0; i--)
+            {
+                if (resources[i].Amount <= 0)
+                {
+                    resources[i].RemoveFromCanvas(GameCanvas);
+                    resources.RemoveAt(i);
+
+                    // С некоторой вероятностью спавним новый ресурс
+                    if (random.Next(3) == 0)
+                    {
+                        SpawnRandomResource();
+                    }
+                }
+            }
+        }
+
+        private void ShowMessage(string message)
+        {
+            Console.WriteLine(message);
+        }
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
             switch (e.Key)
             {
                 case Key.Escape:
                     this.Close();
                     break;
-
                 case Key.W:
                 case Key.Up:
                     isUpPressed = true;
                     break;
-
                 case Key.S:
                 case Key.Down:
                     isDownPressed = true;
                     break;
-
                 case Key.A:
                 case Key.Left:
                     isLeftPressed = true;
                     break;
-
                 case Key.D:
                 case Key.Right:
                     isRightPressed = true;
                     break;
+                case Key.Space:
+                    isMiningPressed = true;
+                    break;
+                case Key.R:
+                    SpawnRandomResource();
+                    break;
+                case Key.I:
+                    ShowInventoryInfo();
+                    break;
             }
         }
 
-        protected override void OnKeyUp(KeyEventArgs e)
+        private void ShowInventoryInfo()
         {
-            base.OnKeyUp(e);
+            string info = "Инвентарь: ";
+            for (int i = 0; i < player.Inventory.Length; i++)
+            {
+                var slot = player.Inventory[i];
+                if (slot.Type != ResourceType.None)
+                {
+                    info += $"[{slot.Type}: {slot.Count}] ";
+                }
+            }
+            ShowMessage(info);
+        }
 
+        private void Window_KeyUp(object sender, KeyEventArgs e)
+        {
             switch (e.Key)
             {
                 case Key.W:
                 case Key.Up:
                     isUpPressed = false;
                     break;
-
                 case Key.S:
                 case Key.Down:
                     isDownPressed = false;
                     break;
-
                 case Key.A:
                 case Key.Left:
                     isLeftPressed = false;
                     break;
-
                 case Key.D:
                 case Key.Right:
                     isRightPressed = false;
+                    break;
+                case Key.Space:
+                    isMiningPressed = false;
                     break;
             }
         }

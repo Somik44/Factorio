@@ -3,16 +3,24 @@
   "WorkspaceRootPath": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|c:\\users\\\u043C\u0438\u0445\u0430\u0438\u043B\\desktop\\game\\factorio\\factorio\\factorio\\resource.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|solutionrelative:factorio\\resource.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|c:\\users\\\u043C\u0438\u0445\u0430\u0438\u043B\\desktop\\game\\factorio\\factorio\\factorio\\enums.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|solutionrelative:factorio\\enums.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|c:\\users\\\u043C\u0438\u0445\u0430\u0438\u043B\\desktop\\game\\factorio\\factorio\\factorio\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|solutionrelative:factorio\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|c:\\users\\\u043C\u0438\u0445\u0430\u0438\u043B\\desktop\\game\\factorio\\factorio\\factorio\\player.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|solutionrelative:factorio\\player.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|c:\\users\\\u043C\u0438\u0445\u0430\u0438\u043B\\desktop\\game\\factorio\\factorio\\factorio\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
       "RelativeMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|solutionrelative:factorio\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|c:\\users\\\u043C\u0438\u0445\u0430\u0438\u043B\\desktop\\game\\factorio\\factorio\\factorio\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|solutionrelative:factorio\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -22,17 +30,43 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 1,
           "Children": [
             {
               "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Enums.cs",
+              "DocumentMoniker": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Enums.cs",
+              "RelativeDocumentMoniker": "Factorio\\Enums.cs",
+              "ToolTip": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Enums.cs",
+              "RelativeToolTip": "Factorio\\Enums.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-16T16:49:28.315Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "Resource.cs",
+              "DocumentMoniker": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Resource.cs",
+              "RelativeDocumentMoniker": "Factorio\\Resource.cs",
+              "ToolTip": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Resource.cs*",
+              "RelativeToolTip": "Factorio\\Resource.cs*",
+              "ViewState": "AgIAAA4AAAAAAAAAAAAwwB4AAAAfAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-16T16:46:02.236Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
               "Title": "Player.cs",
               "DocumentMoniker": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Player.cs",
               "RelativeDocumentMoniker": "Factorio\\Player.cs",
               "ToolTip": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Player.cs",
               "RelativeToolTip": "Factorio\\Player.cs",
-              "ViewState": "AgIAALUAAAAAAAAAAAAmwPYAAAABAAAAAAAAAA==",
+              "ViewState": "AgIAAEcBAAAAAAAAAAAUwCQAAAArAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-12-13T13:00:10.456Z",
               "EditorCaption": ""
@@ -45,14 +79,14 @@
               "RelativeDocumentMoniker": "Factorio\\MainWindow.xaml.cs",
               "ToolTip": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\MainWindow.xaml.cs",
               "RelativeToolTip": "Factorio\\MainWindow.xaml.cs",
-              "ViewState": "AgIAAIwAAAAAAAAAAAAuwKEAAAAeAAAAAAAAAA==",
+              "ViewState": "AgIAAFkAAAAAAAAAAAAIwGsAAAAoAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-12-13T10:24:24.057Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 4,
               "Title": "MainWindow.xaml",
               "DocumentMoniker": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\MainWindow.xaml",
               "RelativeDocumentMoniker": "Factorio\\MainWindow.xaml",
