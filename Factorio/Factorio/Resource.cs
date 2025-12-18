@@ -18,18 +18,18 @@ namespace Factorio
         public int Amount { get; private set; }
         private TextBlock amountText;
 
-        public Resource(double x, double y, ResourceType type, int amount = 1)
+        public Resource(double x, double y, ResourceType type)
         {
             X = x;
             Y = y;
             Type = type;
-            Amount = amount;
+            Amount = int.MaxValue; // Бесконечные ресурсы
 
             // Устанавливаем разные размеры для разных ресурсов
             switch (type)
             {
                 case ResourceType.Coal:
-                    Width = 25; 
+                    Width = 25;
                     Height = 25;
                     break;
                 default:
@@ -51,16 +51,19 @@ namespace Factorio
                 Source = LoadResourceTexture(Type)
             };
 
+            // Для бесконечных ресурсов не показываем количество
+            // Но оставим возможность для отладки
             amountText = new TextBlock
             {
-                Text = Amount.ToString(),
+                Text = "∞", // Символ бесконечности
                 Foreground = Brushes.White,
                 Background = Brushes.Black,
                 FontWeight = FontWeights.Bold,
                 FontSize = 10,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
-                Padding = new Thickness(2)
+                Padding = new Thickness(2),
+                Visibility = Visibility.Collapsed // Скрываем, т.к. ресурсы бесконечные
             };
 
             UpdatePosition();
@@ -169,6 +172,8 @@ namespace Factorio
                 Canvas.SetZIndex(Sprite, 10);
                 UpdatePosition();
 
+                // Для бесконечных ресурсов не добавляем amountText
+                // Но оставим на случай, если захотим показать ∞
                 canvas.Children.Add(amountText);
                 Canvas.SetZIndex(amountText, 11);
             }
@@ -184,18 +189,9 @@ namespace Factorio
 
         public void DecreaseAmount(int amount)
         {
-            if (Amount > 0)
-            {
-                Amount -= amount;
-                if (Amount < 0) Amount = 0;
-
-                amountText.Text = Amount.ToString();
-
-                if (Amount == 0)
-                {
-                    Sprite.Opacity = 0.3;
-                }
-            }
+            // Бесконечные ресурсы - не уменьшаем количество
+            // Метод оставляем для совместимости, но ничего не делаем
+            return;
         }
 
         public bool IsPointInside(Point point)
@@ -213,7 +209,5 @@ namespace Factorio
             double distance = Math.Sqrt(Math.Pow(playerCenterX - resourceCenterX, 2) + Math.Pow(playerCenterY - resourceCenterY, 2));
             return distance <= range;
         }
-
-
     }
 }

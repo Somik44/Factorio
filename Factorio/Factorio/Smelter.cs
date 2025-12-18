@@ -706,6 +706,14 @@ namespace Factorio
             }
         }
 
+        // Добавьте в класс Smelter
+        public bool IsPointInside(Point point)
+        {
+            return point.X >= X && point.X <= X + Width &&
+                   point.Y >= Y && point.Y <= Y + Height;
+        }
+
+        // Метод AddItem уже есть, но обновите его логику для приоритетов:
         public bool AddItem(ResourceType type, int amount, string slotType)
         {
             InventorySlot slot = slotType switch
@@ -718,15 +726,29 @@ namespace Factorio
 
             if (slot == null) return false;
 
+            // Если слот пустой, принимаем ресурс
             if (slot.Type == ResourceType.None)
             {
+                // Для входного слота: если уже есть другой тип материала, не принимаем
+                if (slotType == "input")
+                {
+                    // Проверяем, есть ли уже материал другого типа в слоте
+                    if (InputSlot.Type != ResourceType.None && InputSlot.Type != type)
+                    {
+                        return false; // Уже есть другой материал
+                    }
+                }
+
                 slot.Type = type;
-                slot.Count = amount;
+                slot.Count = Math.Min(amount, 99);
+                UpdateInterface();
                 return true;
             }
+            // Если в слоте уже есть такой ресурс и есть место
             else if (slot.Type == type && slot.Count + amount <= 99)
             {
                 slot.Count += amount;
+                UpdateInterface();
                 return true;
             }
 
@@ -810,5 +832,7 @@ namespace Factorio
         {
             return OutputSlot.Count;
         }
+
+
     }
 }

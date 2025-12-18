@@ -120,6 +120,72 @@
                     </Button.ToolTip>
                 </Button>
 
+                <!-- В меню постройки добавьте эту кнопку после кнопки плавильни -->
+                <Button x:Name="BuildMinerButton"
+                        Content="Добытчик (5 жел.слитков + 5 мед.слитков)"
+                        Width="250"
+                        Height="40"
+                        Background="#FF333333"
+                        Foreground="White"
+                        BorderBrush="Gray"
+                        Margin="0,5"
+                        Click="BuildMinerButton_Click">
+                    <Button.ToolTip>
+                        <ToolTip>
+                            <StackPanel>
+                                <TextBlock Text="Добытчик"/>
+                                <TextBlock Text="Добывает ресурсы каждую секунду"/>
+                                <TextBlock Text="Должен быть установлен на ресурсе"/>
+                                <TextBlock Text="Стоимость: 5 железных слитков + 5 медных слитков"/>
+                            </StackPanel>
+                        </ToolTip>
+                    </Button.ToolTip>
+                </Button>
+
+                <!-- Кнопка постройки одного конвейера -->
+                <Button x:Name="BuildConveyorButton"
+                        Content="Конвейер (2 железных слитка)"
+                        Width="200"
+                        Height="40"
+                        Background="#FF333333"
+                        Foreground="White"
+                        BorderBrush="Gray"
+                        Margin="0,5"
+                        Click="BuildConveyorButton_Click">
+                    <Button.ToolTip>
+                        <ToolTip>
+                            <StackPanel>
+                                <TextBlock Text="Конвейер"/>
+                                <TextBlock Text="Передает ресурсы от добытчика к плавильне"/>
+                                <TextBlock Text="Должен быть соединен с двумя зданиями"/>
+                                <TextBlock Text="Стоимость: 2 железных слитка"/>
+                            </StackPanel>
+                        </ToolTip>
+                    </Button.ToolTip>
+                </Button>
+
+                <!-- Кнопка построения линии конвейеров -->
+                <Button x:Name="BuildConveyorLineButton"
+                        Content="Линия конвейеров (L)"
+                        Width="200"
+                        Height="40"
+                        Background="#FF333333"
+                        Foreground="White"
+                        BorderBrush="Gray"
+                        Margin="0,5"
+                        Click="BuildConveyorLineButton_Click">
+                    <Button.ToolTip>
+                        <ToolTip>
+                            <StackPanel>
+                                <TextBlock Text="Линия конвейеров"/>
+                                <TextBlock Text="Автоматическое построение линии конвейеров"/>
+                                <TextBlock Text="Стоимость: 2 железных слитка на каждый конвейер"/>
+                                <TextBlock Text="Управление: L - запустить режим"/>
+                            </StackPanel>
+                        </ToolTip>
+                    </Button.ToolTip>
+                </Button>
+
                 <Button Content="Отмена"
                         Width="100"
                         Height="30"

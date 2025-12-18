@@ -199,8 +199,44 @@ namespace Factorio
         }
 
 
-        // Изменяем метод Move для проверки коллизий
-        public void Move(double deltaX, double deltaY, Direction direction)
+        // В класс Player добавим методы для проверки ресурсов для добытчика
+        public bool CanBuildMiner()
+        {
+            return HasResources(ResourceType.IronIngot, 5) && HasResources(ResourceType.CopperIngot, 5);
+        }
+
+        public bool RemoveMinerResources()
+        {
+            bool ironRemoved = RemoveResources(ResourceType.IronIngot, 5);
+            bool copperRemoved = RemoveResources(ResourceType.CopperIngot, 5);
+            return ironRemoved && copperRemoved;
+        }
+
+        // Обновим метод для проверки столкновений с добытчиками
+        private bool CheckCollisionWithMiners(double newX, double newY, List<Miner> miners)
+        {
+            if (miners == null) return false;
+
+            foreach (var miner in miners)
+            {
+                if (miner.IsBuilt)
+                {
+                    bool collision = newX < miner.X + miner.Width &&
+                                     newX + Width > miner.X &&
+                                     newY < miner.Y + miner.Height &&
+                                     newY + Height > miner.Y;
+
+                    if (collision)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        // Обновим метод Move для проверки коллизий с добытчиками
+        public void Move(double deltaX, double deltaY, Direction direction, List<Miner> miners = null)
         {
             IsMoving = true;
             CurrentDirection = direction;
@@ -208,32 +244,49 @@ namespace Factorio
             double newX = X + deltaX * Speed;
             double newY = Y + deltaY * Speed;
 
-            // Проверяем столкновения с плавильнями
-            if (CheckCollisionWithSmelters(newX, newY))
-            {
-                // Если есть столкновение, пытаемся двигаться только по одной оси
-                if (!CheckCollisionWithSmelters(newX, Y))
-                {
-                    X = newX; // Двигаемся только по X
-                }
-                else if (!CheckCollisionWithSmelters(X, newY))
-                {
-                    Y = newY; // Двигаемся только по Y
-                }
-                else
-                {
-                    // Не можем двигаться ни в каком направлении
-                    return;
-                }
-            }
-            else
-            {
-                // Нет столкновений, двигаемся как обычно
-                X = newX;
-                Y = newY;
-            }
+            X = newX;
+            Y = newY;
 
-            // Ограничиваем движение в пределах экрана
+
+            //// Проверяем столкновения с плавильнями
+            //if (CheckCollisionWithSmelters(newX, newY))
+            //{
+            //    if (!CheckCollisionWithSmelters(newX, Y))
+            //    {
+            //        X = newX;
+            //    }
+            //    else if (!CheckCollisionWithSmelters(X, newY))
+            //    {
+            //        Y = newY;
+            //    }
+            //    else
+            //    {
+            //        return;
+            //    }
+
+            //}
+            //// Проверяем столкновения с добытчиками
+            //else if (miners != null && CheckCollisionWithMiners(newX, newY, miners))
+            //{
+            //    if (!CheckCollisionWithMiners(newX, Y, miners))
+            //    {
+            //        X = newX;
+            //    }
+            //    else if (!CheckCollisionWithMiners(X, newY, miners))
+            //    {
+            //        Y = newY;
+            //    }
+            //    else
+            //    {
+            //        return;
+            //    }
+            //}
+            //else
+            //{
+            //    X = newX;
+            //    Y = newY;
+            //}
+
             X = Math.Max(0, Math.Min(X, SystemParameters.PrimaryScreenWidth - Width));
             Y = Math.Max(0, Math.Min(Y, SystemParameters.PrimaryScreenHeight - Height));
 
@@ -616,5 +669,7 @@ namespace Factorio
 
             return !collisionWithPlayer;
         }
+
+
     }
 }
