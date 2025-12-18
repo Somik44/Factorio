@@ -23,11 +23,13 @@ namespace Factorio
             X = x;
             Y = y;
             Type = type;
+            Amount = amount;
 
+            // Устанавливаем разные размеры для разных ресурсов
             switch (type)
             {
                 case ResourceType.Coal:
-                    Width = 25;
+                    Width = 25; 
                     Height = 25;
                     break;
                 default:
@@ -35,7 +37,6 @@ namespace Factorio
                     Height = 40;
                     break;
             }
-            Amount = amount;
 
             InitializeSprite();
         }
@@ -73,6 +74,9 @@ namespace Factorio
                 ResourceType.Iron => "iron.png",
                 ResourceType.Copper => "copper.png",
                 ResourceType.Coal => "coal.png",
+                ResourceType.Stone => "stone.png",
+                ResourceType.IronIngot => "iron_ingot.png",
+                ResourceType.CopperIngot => "copper_ingot.png",
                 _ => "default.png"
             };
 
@@ -99,6 +103,7 @@ namespace Factorio
                     ResourceType.Iron => Brushes.Gray,
                     ResourceType.Copper => Brushes.Orange,
                     ResourceType.Coal => Brushes.Black,
+                    ResourceType.Stone => Brushes.LightGray,
                     _ => Brushes.White
                 };
 
@@ -110,6 +115,7 @@ namespace Factorio
                     ResourceType.Iron => "Fe",
                     ResourceType.Copper => "Cu",
                     ResourceType.Coal => "Co",
+                    ResourceType.Stone => "St",
                     _ => "??"
                 };
 
@@ -160,7 +166,7 @@ namespace Factorio
             if (!canvas.Children.Contains(Sprite))
             {
                 canvas.Children.Add(Sprite);
-                Canvas.SetZIndex(Sprite, 10); // Ресурсы под игроком
+                Canvas.SetZIndex(Sprite, 10);
                 UpdatePosition();
 
                 canvas.Children.Add(amountText);
@@ -178,14 +184,17 @@ namespace Factorio
 
         public void DecreaseAmount(int amount)
         {
-            Amount -= amount;
-            if (Amount < 0) Amount = 0;
-
-            amountText.Text = Amount.ToString();
-
-            if (Amount == 0)
+            if (Amount > 0)
             {
-                Sprite.Opacity = 0.3;
+                Amount -= amount;
+                if (Amount < 0) Amount = 0;
+
+                amountText.Text = Amount.ToString();
+
+                if (Amount == 0)
+                {
+                    Sprite.Opacity = 0.3;
+                }
             }
         }
 
@@ -204,5 +213,7 @@ namespace Factorio
             double distance = Math.Sqrt(Math.Pow(playerCenterX - resourceCenterX, 2) + Math.Pow(playerCenterY - resourceCenterY, 2));
             return distance <= range;
         }
+
+
     }
 }

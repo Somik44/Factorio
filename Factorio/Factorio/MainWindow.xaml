@@ -80,5 +80,69 @@
                         CornerRadius="5"/>
             </StackPanel>
         </Border>
+
+        <!-- Меню постройки (скрыто по умолчанию) -->
+        <Border x:Name="BuildMenu" 
+                Visibility="Collapsed"
+                HorizontalAlignment="Center" 
+                VerticalAlignment="Center"
+                Background="#E0000000" 
+                CornerRadius="10"
+                Padding="20"
+                BorderBrush="Gray"
+                BorderThickness="2">
+            <StackPanel>
+                <TextBlock Text="Меню постройки" 
+                           Foreground="White" 
+                           FontSize="20" 
+                           FontWeight="Bold"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,10"/>
+
+                <!-- Кнопка постройки плавильни -->
+                <Button x:Name="BuildSmelterButton"
+                        Content="Плавильня (10 камня + 5 угля)"
+                        Width="200"
+                        Height="40"
+                        Background="#FF333333"
+                        Foreground="White"
+                        BorderBrush="Gray"
+                        Margin="0,5"
+                        Click="BuildSmelterButton_Click">
+                    <Button.ToolTip>
+                        <ToolTip>
+                            <StackPanel>
+                                <TextBlock Text="Плавильня"/>
+                                <TextBlock Text="Переплавляет железо и медь в слитки"/>
+                                <TextBlock Text="Стоимость: 10 камня + 5 угля"/>
+                            </StackPanel>
+                        </ToolTip>
+                    </Button.ToolTip>
+                </Button>
+
+                <Button Content="Отмена"
+                        Width="100"
+                        Height="30"
+                        Background="#FF555555"
+                        Foreground="White"
+                        Margin="0,10,0,0"
+                        Click="CancelBuildButton_Click"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Подсказка при постройке -->
+        <Border x:Name="BuildHint" 
+                Visibility="Collapsed"
+                HorizontalAlignment="Center" 
+                VerticalAlignment="Top"
+                Background="#A0000000" 
+                CornerRadius="5"
+                Padding="10"
+                Margin="0,50,0,0">
+            <TextBlock x:Name="BuildHintText" 
+                       Text="Кликните на место для постройки" 
+                       Foreground="White" 
+                       FontSize="14"/>
+        </Border>
     </Grid>
 </Window>

@@ -5,6 +5,9 @@
         Iron,
         Copper,
         Coal,
+        Stone,
+        IronIngot,  
+        CopperIngot,  
         None
     }
 

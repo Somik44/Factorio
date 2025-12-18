@@ -36,6 +36,7 @@ namespace Factorio
         private double miningProgress = 0;
         private const double miningTime = 1.0;
         private bool isMining = false;
+        private List<Smelter> smelters = new List<Smelter>();
 
         public Player(double startX, double startY, double width, double height)
         {
@@ -50,6 +51,36 @@ namespace Factorio
             InitializeInventory();
             InitializeSprite();
             LoadAnimations();
+        }
+
+        // Добавляем метод для установки списка плавилен
+        public void SetSmelters(List<Smelter> smeltersList)
+        {
+            smelters = smeltersList;
+        }
+
+        // Добавляем метод проверки столкновения с плавильнями
+        private bool CheckCollisionWithSmelters(double newX, double newY)
+        {
+            if (smelters == null) return false;
+
+            foreach (var smelter in smelters)
+            {
+                if (smelter.IsBuilt)
+                {
+                    // Проверяем пересечение прямоугольников (игрока и плавильни)
+                    bool collision = newX < smelter.X + smelter.Width &&
+                                     newX + Width > smelter.X &&
+                                     newY < smelter.Y + smelter.Height &&
+                                     newY + Height > smelter.Y;
+
+                    if (collision)
+                    {
+                        return true; // Есть столкновение
+                    }
+                }
+            }
+            return false; // Нет столкновений
         }
 
         private void InitializeInventory()
@@ -77,7 +108,6 @@ namespace Factorio
             };
             UpdatePosition();
         }
-
         private void LoadAnimations()
         {
             animations = new Dictionary<Direction, List<BitmapImage>>();
@@ -168,14 +198,42 @@ namespace Factorio
             return bitmap;
         }
 
+
+        // Изменяем метод Move для проверки коллизий
         public void Move(double deltaX, double deltaY, Direction direction)
         {
             IsMoving = true;
             CurrentDirection = direction;
 
-            X += deltaX * Speed;
-            Y += deltaY * Speed;
+            double newX = X + deltaX * Speed;
+            double newY = Y + deltaY * Speed;
 
+            // Проверяем столкновения с плавильнями
+            if (CheckCollisionWithSmelters(newX, newY))
+            {
+                // Если есть столкновение, пытаемся двигаться только по одной оси
+                if (!CheckCollisionWithSmelters(newX, Y))
+                {
+                    X = newX; // Двигаемся только по X
+                }
+                else if (!CheckCollisionWithSmelters(X, newY))
+                {
+                    Y = newY; // Двигаемся только по Y
+                }
+                else
+                {
+                    // Не можем двигаться ни в каком направлении
+                    return;
+                }
+            }
+            else
+            {
+                // Нет столкновений, двигаемся как обычно
+                X = newX;
+                Y = newY;
+            }
+
+            // Ограничиваем движение в пределах экрана
             X = Math.Max(0, Math.Min(X, SystemParameters.PrimaryScreenWidth - Width));
             Y = Math.Max(0, Math.Min(Y, SystemParameters.PrimaryScreenHeight - Height));
 
@@ -329,7 +387,21 @@ namespace Factorio
             return false;
         }
 
-        private void UpdateInventorySlot(int slotIndex)
+        public bool AddResource(ResourceType type, int amount = 1)
+        {
+            bool success = true;
+            for (int i = 0; i < amount; i++)
+            {
+                if (!AddToInventory(type))
+                {
+                    success = false;
+                    break;
+                }
+            }
+            return success;
+        }
+
+        public void UpdateInventorySlot(int slotIndex)
         {
             if (inventoryPanel == null || slotIndex < 0 || slotIndex >= 5) return;
 
@@ -357,6 +429,15 @@ namespace Factorio
                     case ResourceType.Coal:
                         filePath = Path.Combine(basePath, "coal.png");
                         break;
+                    case ResourceType.Stone:
+                        filePath = Path.Combine(basePath, "stone.png");
+                        break;
+                    case ResourceType.IronIngot:
+                        filePath = Path.Combine(basePath, "iron_ingot.png");
+                        break;
+                    case ResourceType.CopperIngot:
+                        filePath = Path.Combine(basePath, "copper_ingot.png");
+                        break;
                     default:
                         filePath = Path.Combine(basePath, "default.png");
                         break;
@@ -375,8 +456,8 @@ namespace Factorio
                 }
                 else
                 {
-                    // Если файл не найден, создаем заглушку
-                    icon.Source = CreatePlaceholderResourceIcon(slot.Type);
+                    // Простая текстовая иконка если файл не найден
+                    icon.Source = CreateSimpleIcon(slot.Type);
                 }
 
                 TextBlock countText = new TextBlock
@@ -394,37 +475,28 @@ namespace Factorio
             }
         }
 
-        private BitmapImage CreatePlaceholderResourceIcon(ResourceType type)
+        private BitmapImage CreateSimpleIcon(ResourceType type)
         {
-            var renderTarget = new RenderTargetBitmap(50, 50, 96, 96, PixelFormats.Pbgra32);
+            var renderTarget = new RenderTargetBitmap(40, 40, 96, 96, PixelFormats.Pbgra32);
             var drawingVisual = new DrawingVisual();
 
             using (var drawingContext = drawingVisual.RenderOpen())
             {
-                // Разные цвета для разных типов ресурсов
-                Brush color = type switch
-                {
-                    ResourceType.Iron => Brushes.Gray,
-                    ResourceType.Copper => Brushes.Orange,
-                    ResourceType.Coal => Brushes.Black,
-                    _ => Brushes.White
-                };
-
-                drawingContext.DrawRectangle(color, null, new Rect(0, 0, 50, 50));
-                drawingContext.DrawRectangle(Brushes.Black, new Pen(Brushes.Black, 2), new Rect(0, 0, 50, 50));
+                drawingContext.DrawRectangle(Brushes.Gray, null, new Rect(0, 0, 40, 40));
+                drawingContext.DrawRectangle(Brushes.Black, new Pen(Brushes.Black, 2), new Rect(0, 0, 40, 40));
 
                 // Текст с названием ресурса
-                string text = type.ToString().Substring(0, 1);
+                string text = type.ToString().Substring(0, 2);
                 var formattedText = new FormattedText(
                     text,
                     System.Globalization.CultureInfo.CurrentCulture,
                     FlowDirection.LeftToRight,
                     new Typeface("Arial"),
-                    20,
+                    16,
                     Brushes.White,
                     1.0);
 
-                drawingContext.DrawText(formattedText, new Point(15, 12));
+                drawingContext.DrawText(formattedText, new Point(10, 10));
             }
 
             renderTarget.Render(drawingVisual);
@@ -452,6 +524,97 @@ namespace Factorio
             {
                 UpdateInventorySlot(i);
             }
+        }
+
+        // Методы для работы с ресурсами
+        public bool HasResources(ResourceType type, int amount)
+        {
+            int total = 0;
+            foreach (var slot in Inventory)
+            {
+                if (slot.Type == type)
+                {
+                    total += slot.Count;
+                }
+            }
+            return total >= amount;
+        }
+
+        public int GetResourceCount(ResourceType type)
+        {
+            int total = 0;
+            foreach (var slot in Inventory)
+            {
+                if (slot.Type == type)
+                {
+                    total += slot.Count;
+                }
+            }
+            return total;
+        }
+
+        public bool RemoveResources(ResourceType type, int amount)
+        {
+            int remaining = amount;
+
+            for (int i = 0; i < Inventory.Length && remaining > 0; i++)
+            {
+                if (Inventory[i].Type == type)
+                {
+                    int removeAmount = Math.Min(Inventory[i].Count, remaining);
+                    Inventory[i].Count -= removeAmount;
+                    remaining -= removeAmount;
+
+                    if (Inventory[i].Count <= 0)
+                    {
+                        Inventory[i].Type = ResourceType.None;
+                        Inventory[i].Count = 0;
+                    }
+
+                    UpdateInventorySlot(i);
+                }
+            }
+
+            return remaining == 0;
+        }
+
+        public bool CanBuildSmelter()
+        {
+            return HasResources(ResourceType.Stone, 10) && HasResources(ResourceType.Coal, 5);
+        }
+
+        public bool RemoveBuildingResources()
+        {
+            bool stoneRemoved = RemoveResources(ResourceType.Stone, 10);
+            bool coalRemoved = RemoveResources(ResourceType.Coal, 5);
+            return stoneRemoved && coalRemoved;
+        }
+
+        // Метод для проверки, можно ли поставить здание в этом месте
+        public bool CanPlaceBuilding(double buildingX, double buildingY, double buildingWidth, double buildingHeight)
+        {
+            // Проверяем расстояние до игрока (не ближе 50 пикселей)
+            double playerCenterX = X + Width / 2;
+            double playerCenterY = Y + Height / 2;
+            double buildingCenterX = buildingX + buildingWidth / 2;
+            double buildingCenterY = buildingY + buildingHeight / 2;
+
+            double distance = Math.Sqrt(
+                Math.Pow(playerCenterX - buildingCenterX, 2) +
+                Math.Pow(playerCenterY - buildingCenterY, 2));
+
+            if (distance < 50) // Минимальное расстояние 50 пикселей
+            {
+                return false;
+            }
+
+            // Проверяем столкновение с игроком
+            bool collisionWithPlayer = buildingX < X + Width &&
+                                       buildingX + buildingWidth > X &&
+                                       buildingY < Y + Height &&
+                                       buildingY + buildingHeight > Y;
+
+            return !collisionWithPlayer;
         }
     }
 }
