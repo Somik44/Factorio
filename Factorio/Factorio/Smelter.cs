@@ -38,7 +38,7 @@ namespace Factorio
         {
             X = x;
             Y = y;
-            Width = 150;  // Нормальный размер
+            Width = 180;  // Нормальный размер
             Height = 150; // Нормальный размер
             IsBuilt = false;
             this.player = player;

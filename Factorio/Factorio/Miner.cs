@@ -35,8 +35,8 @@ namespace Factorio
         {
             X = x;
             Y = y;
-            Width = 100;
-            Height = 100;
+            Width = 90;
+            Height = 90;
             IsBuilt = false;
             IsPlacedOnResource = false;
             MiningType = ResourceType.None;

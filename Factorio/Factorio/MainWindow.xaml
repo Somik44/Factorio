@@ -186,6 +186,26 @@
                     </Button.ToolTip>
                 </Button>
 
+                <!-- В меню постройки добавьте -->
+                <Button x:Name="ToggleGridButton"
+        Content="Сетка: Вкл"
+        Width="150"
+        Height="30"
+        Background="#FF333333"
+        Foreground="White"
+        BorderBrush="Gray"
+        Margin="0,5"
+        Click="ToggleGridButton_Click">
+                    <Button.ToolTip>
+                        <ToolTip>
+                            <StackPanel>
+                                <TextBlock Text="Переключение сетки"/>
+                                <TextBlock Text="Горячая клавиша: G"/>
+                            </StackPanel>
+                        </ToolTip>
+                    </Button.ToolTip>
+                </Button>
+
                 <Button Content="Отмена"
                         Width="100"
                         Height="30"

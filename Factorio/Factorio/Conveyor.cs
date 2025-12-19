@@ -44,8 +44,8 @@ namespace Factorio
             X = x;
             Y = y;
             Direction = direction;
-            Width = 40;
-            Height = 40;
+            Width = 30;
+            Height = 30;
             IsBuilt = false;
             IsActive = false;
 
