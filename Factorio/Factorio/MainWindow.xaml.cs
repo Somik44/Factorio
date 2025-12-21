@@ -57,6 +57,10 @@ namespace Factorio
         private object connectionSource = null;
         private object connectionTarget = null;
 
+        //npc
+        private List<Insect> insects = new List<Insect>();
+        private List<Cannon> cannons = new List<Cannon>();
+
         public MainWindow()
         {
             InitializeComponent();
@@ -112,6 +116,7 @@ namespace Factorio
                 "miner" => new Size(90, 90),         // 3x3 клетки
                 "conveyor" => new Size(30, 30),      // 1x1 клетка
                 "arms_factory" => new Size(90, 120), // 3x4 клетки
+                "cannon" => new Size(60, 60),      // 2x2 клетки
                 _ => new Size(0, 0)
             };
         }
@@ -427,12 +432,28 @@ namespace Factorio
             player.UpdateAnimation();
             player.UpdateMining(resources, isMiningPressed);
 
-            // Обновляем все добытчики
+            // Обновляем всех добытчиков
             foreach (var miner in miners)
             {
                 if (miner.IsBuilt)
                 {
                     miner.CheckPlacementOnResource(resources);
+                }
+            }
+
+            // Обновляем жуков
+            UpdateInsects();
+        }
+
+        private void UpdateInsects()
+        {
+            // Удаляем мертвых жуков
+            for (int i = insects.Count - 1; i >= 0; i--)
+            {
+                if (insects[i].IsDead)
+                {
+                    insects[i].RemoveFromCanvas(GameCanvas);
+                    insects.RemoveAt(i);
                 }
             }
         }
@@ -629,6 +650,17 @@ namespace Factorio
                 case Key.G:
                     ToggleGrid();
                     break;
+                case Key.M:
+                    // Если не в режиме постройки - спавним жуков
+                    if (!isBuildingMode && !isBuildingLine && !isConnectingMode)
+                    {
+                        SpawnInsects();
+                    }
+                    else
+                    {
+                        ShowInventoryInfo();
+                    }
+                    break;
                 case Key.E:
                     // Экстренное удаление - для отладки
                     if (Keyboard.Modifiers == ModifierKeys.Control)
@@ -637,6 +669,52 @@ namespace Factorio
                     }
                     break;
             }
+        }
+
+        private void SpawnInsects()
+        {
+            Random random = new Random();
+            int insectCount = random.Next(2, 6); // От 2 до 5 жуков
+
+            for (int i = 0; i < insectCount; i++)
+            {
+                SpawnInsect();
+            }
+
+            ShowMessage($"Появилось {insectCount} жуков!");
+        }
+
+        private void SpawnInsect()
+        {
+            Random random = new Random();
+
+            // Выбираем случайную сторону экрана
+            int side = random.Next(4); // 0: верх, 1: низ, 2: лево, 3: право
+            double x, y;
+
+            switch (side)
+            {
+                case 0: // Верх
+                    x = random.Next((int)this.ActualWidth);
+                    y = -50;
+                    break;
+                case 1: // Низ
+                    x = random.Next((int)this.ActualWidth);
+                    y = this.ActualHeight + 50;
+                    break;
+                case 2: // Лево
+                    x = -50;
+                    y = random.Next((int)this.ActualHeight);
+                    break;
+                default: // Право
+                    x = this.ActualWidth + 50;
+                    y = random.Next((int)this.ActualHeight);
+                    break;
+            }
+
+            Insect insect = new Insect(x, y, player);
+            insect.AddToCanvas(GameCanvas);
+            insects.Add(insect);
         }
 
         private void ToggleGrid()
@@ -682,6 +760,7 @@ namespace Factorio
                 "miner" => "Кликните НА РЕСУРС для постройки добытчика (5 жел.слитков + 5 мед.слитков)",
                 "conveyor" => "Кликните для постройки конвейера (2 железных слитка)",
                 "arms_factory" => "Кликните на место для постройки оружейного завода (15 камня + 10 жел.слитков + 10 мед.слитков)",
+                "cannon" => "Кликните на место для постройки пушки (5 жел.слитков + 6 деталей + 3 патрона)", // Новая строка
                 _ => "Кликните на место для постройки"
             };
         }
@@ -695,6 +774,7 @@ namespace Factorio
                 "miner" => "Mining.png",
                 "conveyor" => "conveyor\\down_1.png",
                 "arms_factory" => "arms_factory.png",
+                "cannon" => "cannon.png",
                 _ => "default.png"
             };
 
@@ -824,6 +904,12 @@ namespace Factorio
             else if (buildingType == "arms_factory")
             {
                 return player.CanBuildArmsFactory();
+            }
+            else if (buildingType == "cannon")
+            {
+                return player.HasResources(ResourceType.IronIngot, 5) &&
+                       player.HasResources(ResourceType.Gears, 6) &&
+                       player.HasResources(ResourceType.Ammo, 3);
             }
 
             return false;
@@ -984,6 +1070,38 @@ namespace Factorio
             }
         }
 
+        private void BuildCannon(double x, double y)
+        {
+            if (!HasBuildingResources("cannon"))
+            {
+                ShowMessage("Недостаточно ресурсов для постройки пушки!\nНужно: 5 железных слитков + 6 деталей + 3 патрона");
+                return;
+            }
+
+            if (!player.RemoveResources(ResourceType.IronIngot, 5) ||
+                !player.RemoveResources(ResourceType.Gears, 6) ||
+                !player.RemoveResources(ResourceType.Ammo, 3))
+            {
+                ShowMessage("Ошибка при удалении ресурсов!");
+                return;
+            }
+
+            Cannon cannon = new Cannon(x, y);
+            cannon.SetTargetInsects(insects);
+            cannon.SetGameCanvas(GameCanvas);
+            cannon.Build();
+            cannon.AddToCanvas(GameCanvas);
+            cannons.Add(cannon);
+
+            ShowMessage("Пушка построена!");
+            CancelBuildingMode();
+        }
+
+        private void BuildCannonButton_Click(object sender, RoutedEventArgs e)
+        {
+            StartBuildingMode("cannon");
+        }
+
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
@@ -1126,6 +1244,10 @@ namespace Factorio
                 else if (buildingToPlace == "arms_factory")
                 {
                     BuildArmsFactory(buildingX, buildingY);
+                }
+                else if (buildingToPlace == "cannon")
+                {
+                    BuildCannon(buildingX, buildingY);
                 }
             }
             else

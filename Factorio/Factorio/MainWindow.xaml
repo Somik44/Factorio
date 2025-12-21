@@ -185,7 +185,28 @@
                     </Button.ToolTip>
                 </Button>
 
-              
+                <!-- Кнопка постройки пушки -->
+                <Button x:Name="BuildCannonButton" Content="Пушка (5 жел.слитков + 6 деталей + 3 патрона)" 
+                        Click="BuildCannonButton_Click" 
+                        Margin="5" 
+                        Width="250" 
+                        Height="30"
+                        Background="#FF333333"
+                        Foreground="White"
+                        BorderBrush="Gray"
+                        BorderThickness="1">
+                    <Button.ToolTip>
+                        <ToolTip>
+                            <StackPanel>
+                                <TextBlock Text="Защитное оружие против жуков" FontWeight="Bold"/>
+                                <TextBlock Text="• Стреляет по врагам в радиусе 4 клеток"/>
+                                <TextBlock Text="• Уничтожает жука за 2 попадания"/>
+                                <TextBlock Text="• Размер: 2x2 клетки"/>
+                            </StackPanel>
+                        </ToolTip>
+                    </Button.ToolTip>
+                </Button>
+
 
                 <!-- В меню постройки добавьте -->
                 <Button x:Name="ToggleGridButton"

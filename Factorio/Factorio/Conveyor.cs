@@ -159,6 +159,7 @@ namespace Factorio
         // TRANSPORT LOGIC
         // =========================
 
+        // Вместо текущей логики в UpdateTransport:
         private void UpdateTransport()
         {
             if (!IsActive) return;
@@ -171,33 +172,154 @@ namespace Factorio
 
                 if (progress >= 1.0)
                     CompleteTransport();
-
                 return;
             }
 
-            // 1️⃣ Из своего буфера
-            if (buffer.Count > 0)
-            {
-                StartTransport(buffer.Dequeue());
-                return;
-            }
-
-            // 2️⃣ От предыдущего конвейера
-            if (PreviousConveyor != null && PreviousConveyor.CanGive())
+            // 1️⃣ Получаем ресурс ТОЛЬКО от предыдущего конвейера (если он есть)
+            if (PreviousConveyor != null && PreviousConveyor.CanGive() && IsPreviousInCorrectDirection())
             {
                 buffer.Enqueue(PreviousConveyor.Give());
                 return;
             }
 
-            // 3️⃣ 🔥 ИЗ ИСТОЧНИКА (ЭТОГО НЕ БЫЛО)
-            if (SourceBuilding != null)
+            // 2️⃣ Получаем ресурс ИЗ ИСТОЧНИКА (если он есть и находится с правильной стороны)
+            if (SourceBuilding != null && IsSourceInInputDirection())
             {
                 ResourceType res = TryGetFromSource(SourceBuilding);
                 if (res != ResourceType.None)
                 {
                     buffer.Enqueue(res);
+                    return;
                 }
             }
+
+            // 3️⃣ Или из своего буфера
+            if (buffer.Count > 0)
+            {
+                StartTransport(buffer.Dequeue());
+            }
+        }
+
+        // Проверяем, находится ли предыдущий конвейер в правильном направлении
+        private bool IsPreviousInCorrectDirection()
+        {
+            if (PreviousConveyor == null) return false;
+
+            // Проверяем, что предыдущий конвейер "смотрит" на этот
+            return PreviousConveyor.Direction == GetDirectionTo(this);
+        }
+
+        // Получаем направление от данного конвейера к целевому
+        private Direction GetDirectionTo(Conveyor target)
+        {
+            double dx = target.X - this.X;
+            double dy = target.Y - this.Y;
+
+            if (Math.Abs(dx) > Math.Abs(dy))
+                return dx > 0 ? Direction.Right : Direction.Left;
+            else
+                return dy > 0 ? Direction.Down : Direction.Up;
+        }
+
+        // Проверяем, находится ли источник с входной стороны
+        private bool IsSourceInInputDirection()
+        {
+            if (SourceBuilding == null) return false;
+
+            Point sourceCenter = GetBuildingCenter(SourceBuilding);
+            Point conveyorCenter = new Point(X + Width / 2, Y + Height / 2);
+
+            // Проверяем, что источник находится с "обратной" стороны от направления
+            switch (Direction)
+            {
+                case Direction.Right:  // Движение вправо → источник должен быть слева
+                    return sourceCenter.X < conveyorCenter.X;
+                case Direction.Left:   // Движение влево ← источник должен быть справа
+                    return sourceCenter.X > conveyorCenter.X;
+                case Direction.Down:   // Движение вниз ↓ источник должен быть сверху
+                    return sourceCenter.Y < conveyorCenter.Y;
+                case Direction.Up:     // Движение вверх ↑ источник должен быть снизу
+                    return sourceCenter.Y > conveyorCenter.Y;
+                default:
+                    return false;
+            }
+        }
+
+        // Аналогично для цели
+        private bool IsTargetInOutputDirection()
+        {
+            if (TargetBuilding == null) return false;
+
+            Point targetCenter = GetBuildingCenter(TargetBuilding);
+            Point conveyorCenter = new Point(X + Width / 2, Y + Height / 2);
+
+            // Проверяем, что цель находится с "лицевой" стороны от направления
+            switch (Direction)
+            {
+                case Direction.Right:  // Движение вправо → цель должна быть справа
+                    return targetCenter.X > conveyorCenter.X;
+                case Direction.Left:   // Движение влево ← цель должна быть слева
+                    return targetCenter.X < conveyorCenter.X;
+                case Direction.Down:   // Движение вниз ↓ цель должна быть снизу
+                    return targetCenter.Y > conveyorCenter.Y;
+                case Direction.Up:     // Движение вверх ↑ цель должна быть сверху
+                    return targetCenter.Y < conveyorCenter.Y;
+                default:
+                    return false;
+            }
+        }
+
+        // Метод для получения центра здания (нужен для проверок направления)
+        private Point GetBuildingCenter(object building)
+        {
+            if (building is Miner miner)
+            {
+                return new Point(miner.X + miner.Width / 2, miner.Y + miner.Height / 2);
+            }
+            else if (building is Smelter smelter)
+            {
+                return new Point(smelter.X + smelter.Width / 2, smelter.Y + smelter.Height / 2);
+            }
+            else if (building is ArmsFactory armsFactory)
+            {
+                return new Point(armsFactory.X + armsFactory.Width / 2, armsFactory.Y + armsFactory.Height / 2);
+            }
+
+            return new Point(0, 0);
+        }
+
+        // В CompleteTransport проверяем направление цели
+        private void CompleteTransport()
+        {
+            // 1️⃣ Передаём дальше по ленте (если следующий конвейер в правильном направлении)
+            if (NextConveyor != null && IsNextInCorrectDirection() && NextConveyor.Receive(currentResource))
+            {
+                ResetTransport();
+                return;
+            }
+
+            // 2️⃣ Пытаемся отдать в здание (если оно в правильном направлении)
+            if (TargetBuilding != null && IsTargetInOutputDirection() &&
+                TryDeliverToTarget(TargetBuilding, currentResource))
+            {
+                ResetTransport();
+                return;
+            }
+
+            // 3️⃣ Возвращаем в буфер (если не смогли передать дальше)
+            if (buffer.Count < MaxBufferSize)
+                buffer.Enqueue(currentResource);
+
+            ResetTransport();
+        }
+
+        // Проверяем, находится ли следующий конвейер в правильном направлении
+        private bool IsNextInCorrectDirection()
+        {
+            if (NextConveyor == null) return false;
+
+            // Проверяем, что этот конвейер "смотрит" на следующий
+            return this.Direction == GetDirectionTo(NextConveyor);
         }
 
         private ResourceType TryGetFromSource(object source)
@@ -264,28 +386,6 @@ namespace Factorio
             UpdateResourcePosition();
         }
 
-        private void CompleteTransport()
-        {
-            // 1️⃣ Передаём дальше по ленте
-            if (NextConveyor != null && NextConveyor.Receive(currentResource))
-            {
-                ResetTransport();
-                return;
-            }
-
-            // 2️⃣ Пытаемся отдать в здание (старый TargetBuilding)
-            if (TargetBuilding != null && TryDeliverToTarget(TargetBuilding, currentResource))
-            {
-                ResetTransport();
-                return;
-            }
-
-            // 3️⃣ Возвращаем в буфер
-            if (buffer.Count < MaxBufferSize)
-                buffer.Enqueue(currentResource);
-
-            ResetTransport();
-        }
 
         private void ResetTransport()
         {
