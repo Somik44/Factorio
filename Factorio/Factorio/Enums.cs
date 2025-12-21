@@ -1,5 +1,4 @@
-﻿// Enums.cs
-namespace Factorio
+﻿namespace Factorio
 {
     public enum ResourceType
     {
@@ -9,6 +8,8 @@ namespace Factorio
         Stone,
         IronIngot,
         CopperIngot,
+        Ammo,
+        Gears,
         None
     }
 
@@ -24,6 +25,7 @@ namespace Factorio
     public enum BuildingType
     {
         Smelter,
-        Miner
+        Miner,
+        ArmsFactory
     }
 }

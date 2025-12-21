@@ -142,6 +142,27 @@
                     </Button.ToolTip>
                 </Button>
 
+                <Button x:Name="BuildArmsFactoryButton"
+        Content="Оружейный завод (15 камня + 10 жел.слитков + 10 мед.слитков)"
+        Width="250"
+        Height="40"
+        Background="#FF333333"
+        Foreground="White"
+        BorderBrush="Gray"
+        Margin="0,5"
+        Click="BuildArmsFactoryButton_Click">
+                    <Button.ToolTip>
+                        <ToolTip>
+                            <StackPanel>
+                                <TextBlock Text="Оружейный завод"/>
+                                <TextBlock Text="Производит патроны из медных слитков и шестеренки из железных"/>
+                                <TextBlock Text="Размер: 3x4 клетки"/>
+                                <TextBlock Text="Стоимость: 15 камня + 10 железных слитков"/>
+                            </StackPanel>
+                        </ToolTip>
+                    </Button.ToolTip>
+                </Button>
+
                 <!-- Кнопка постройки одного конвейера -->
                 <Button x:Name="BuildConveyorButton"
                         Content="Конвейер (2 железных слитка)"
@@ -164,27 +185,7 @@
                     </Button.ToolTip>
                 </Button>
 
-                <!-- Кнопка построения линии конвейеров -->
-                <Button x:Name="BuildConveyorLineButton"
-                        Content="Линия конвейеров (L)"
-                        Width="200"
-                        Height="40"
-                        Background="#FF333333"
-                        Foreground="White"
-                        BorderBrush="Gray"
-                        Margin="0,5"
-                        Click="BuildConveyorLineButton_Click">
-                    <Button.ToolTip>
-                        <ToolTip>
-                            <StackPanel>
-                                <TextBlock Text="Линия конвейеров"/>
-                                <TextBlock Text="Автоматическое построение линии конвейеров"/>
-                                <TextBlock Text="Стоимость: 2 железных слитка на каждый конвейер"/>
-                                <TextBlock Text="Управление: L - запустить режим"/>
-                            </StackPanel>
-                        </ToolTip>
-                    </Button.ToolTip>
-                </Button>
+              
 
                 <!-- В меню постройки добавьте -->
                 <Button x:Name="ToggleGridButton"

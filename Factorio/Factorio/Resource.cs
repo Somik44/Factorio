@@ -50,9 +50,6 @@ namespace Factorio
                 Stretch = Stretch.Uniform,
                 Source = LoadResourceTexture(Type)
             };
-
-            // Для бесконечных ресурсов не показываем количество
-            // Но оставим возможность для отладки
             amountText = new TextBlock
             {
                 Text = "∞", // Символ бесконечности

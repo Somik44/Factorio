@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -198,7 +198,6 @@ namespace Factorio
             return bitmap;
         }
 
-
         // В класс Player добавим методы для проверки ресурсов для добытчика
         public bool CanBuildMiner()
         {
@@ -210,6 +209,20 @@ namespace Factorio
             bool ironRemoved = RemoveResources(ResourceType.IronIngot, 5);
             bool copperRemoved = RemoveResources(ResourceType.CopperIngot, 5);
             return ironRemoved && copperRemoved;
+        }
+
+        // Методы для проверки ресурсов для оружейного завода
+        public bool CanBuildArmsFactory()
+        {
+            return HasResources(ResourceType.Stone, 15) && HasResources(ResourceType.IronIngot, 10) && HasResources(ResourceType.CopperIngot, 10);
+        }
+
+        public bool RemoveArmsFactoryResources()
+        {
+            bool stoneRemoved = RemoveResources(ResourceType.Stone, 15);
+            bool ironRemoved = RemoveResources(ResourceType.IronIngot, 10);
+            bool copperRemoved = RemoveResources(ResourceType.CopperIngot, 10);
+            return stoneRemoved && ironRemoved && copperRemoved;
         }
 
         // Обновим метод для проверки столкновений с добытчиками
@@ -246,46 +259,6 @@ namespace Factorio
 
             X = newX;
             Y = newY;
-
-
-            //// Проверяем столкновения с плавильнями
-            //if (CheckCollisionWithSmelters(newX, newY))
-            //{
-            //    if (!CheckCollisionWithSmelters(newX, Y))
-            //    {
-            //        X = newX;
-            //    }
-            //    else if (!CheckCollisionWithSmelters(X, newY))
-            //    {
-            //        Y = newY;
-            //    }
-            //    else
-            //    {
-            //        return;
-            //    }
-
-            //}
-            //// Проверяем столкновения с добытчиками
-            //else if (miners != null && CheckCollisionWithMiners(newX, newY, miners))
-            //{
-            //    if (!CheckCollisionWithMiners(newX, Y, miners))
-            //    {
-            //        X = newX;
-            //    }
-            //    else if (!CheckCollisionWithMiners(X, newY, miners))
-            //    {
-            //        Y = newY;
-            //    }
-            //    else
-            //    {
-            //        return;
-            //    }
-            //}
-            //else
-            //{
-            //    X = newX;
-            //    Y = newY;
-            //}
 
             X = Math.Max(0, Math.Min(X, SystemParameters.PrimaryScreenWidth - Width));
             Y = Math.Max(0, Math.Min(Y, SystemParameters.PrimaryScreenHeight - Height));
@@ -491,6 +464,12 @@ namespace Factorio
                     case ResourceType.CopperIngot:
                         filePath = Path.Combine(basePath, "copper_ingot.png");
                         break;
+                    case ResourceType.Ammo:
+                        filePath = Path.Combine(basePath, "ammo.png");
+                        break;
+                    case ResourceType.Gears:
+                        filePath = Path.Combine(basePath, "gears.png");
+                        break;
                     default:
                         filePath = Path.Combine(basePath, "default.png");
                         break;
@@ -539,7 +518,12 @@ namespace Factorio
                 drawingContext.DrawRectangle(Brushes.Black, new Pen(Brushes.Black, 2), new Rect(0, 0, 40, 40));
 
                 // Текст с названием ресурса
-                string text = type.ToString().Substring(0, 2);
+                string text = type switch
+                {
+                    ResourceType.Ammo => "AM",
+                    ResourceType.Gears => "GE",
+                    _ => type.ToString().Substring(0, 2)
+                };
                 var formattedText = new FormattedText(
                     text,
                     System.Globalization.CultureInfo.CurrentCulture,
@@ -669,7 +653,5 @@ namespace Factorio
 
             return !collisionWithPlayer;
         }
-
-
     }
 }
