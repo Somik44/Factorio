@@ -52,10 +52,10 @@ namespace Factorio
         private bool isLineFirstClick = true;
         private List<Conveyor> linePreviewConveyors = new List<Conveyor>();
 
-        // Состояние соединения конвейера с зданиями
-        private bool isConnectingMode = false;
-        private object connectionSource = null;
-        private object connectionTarget = null;
+        // НОВЫЙ РЕЖИМ СОЕДИНЕНИЯ КОНВЕЙЕРОВ С ЗДАНИЯМИ
+        private bool isSelectingConveyorForBuilding = false;
+        private object selectedBuildingForConnection = null;
+        private bool isConnectingInput = true; // true = вход, false = выход
 
         //npc
         private List<Insect> insects = new List<Insect>();
@@ -82,7 +82,7 @@ namespace Factorio
             SpawnInitialResources();
 
             player.SetInventoryPanel(InventoryPanel);
-            player.SetSmelters(smelters); // Устанавливаем список плавилен для игрока
+            player.SetSmelters(smelters);
             this.Focus();
 
             ShowGrid();
@@ -104,16 +104,15 @@ namespace Factorio
             return new Point(size.Width / 2, size.Height / 2);
         }
 
-
         private Size GetBuildingSize(string buildingType)
         {
             return buildingType switch
             {
-                "smelter" => new Size(180, 150),     // 6x5 клеток
-                "miner" => new Size(90, 90),         // 3x3 клетки
-                "conveyor" => new Size(30, 30),      // 1x1 клетка
-                "arms_factory" => new Size(90, 120), // 3x4 клетки
-                "cannon" => new Size(60, 60),      // 2x2 клетки
+                "smelter" => new Size(180, 150),
+                "miner" => new Size(90, 90),
+                "conveyor" => new Size(30, 30),
+                "arms_factory" => new Size(90, 120),
+                "cannon" => new Size(60, 60),
                 _ => new Size(0, 0)
             };
         }
@@ -122,7 +121,6 @@ namespace Factorio
         {
             var size = GetBuildingSize(buildingType);
 
-            // Для конвейеров не проверяем расстояние до игрока
             if (checkDistance && buildingType != "conveyor")
             {
                 double playerCenterX = player.X + player.Width / 2;
@@ -134,13 +132,12 @@ namespace Factorio
                     Math.Pow(playerCenterX - buildingCenterX, 2) +
                     Math.Pow(playerCenterY - buildingCenterY, 2));
 
-                if (distance > 300) // Максимальное расстояние в пикселях
+                if (distance > 300)
                 {
                     return false;
                 }
             }
 
-            // Проверяем, не выходит ли за границы
             if (x < 0 || y < 0 || x + size.Width > GameCanvas.ActualWidth || y + size.Height > GameCanvas.ActualHeight)
             {
                 return false;
@@ -148,15 +145,12 @@ namespace Factorio
 
             Rect newBuildingRect = new Rect(x, y, size.Width, size.Height);
 
-            // Для конвейеров используем менее строгие проверки
             if (buildingType == "conveyor")
             {
-                // Для конвейера проверяем только пересечение с центрами других объектов
                 return IsConveyorPlacementValid(x, y);
             }
             else
             {
-                // Для других зданий проверяем столкновения
                 return IsRegularBuildingPlacementValid(newBuildingRect, buildingType);
             }
         }
@@ -177,29 +171,20 @@ namespace Factorio
 
             foreach (var smelter in smelters)
             {
-                if (smelter.IsBuilt)
-                {
-                    if (IsPointTooCloseToRect(conveyorCenter, smelter.X, smelter.Y, smelter.Width, smelter.Height, 5))
-                        return false;
-                }
+                if (smelter.IsBuilt && IsPointTooCloseToRect(conveyorCenter, smelter.X, smelter.Y, smelter.Width, smelter.Height, 5))
+                    return false;
             }
 
             foreach (var miner in miners)
             {
-                if (miner.IsBuilt)
-                {
-                    if (IsPointTooCloseToRect(conveyorCenter, miner.X, miner.Y, miner.Width, miner.Height, 5))
-                        return false;
-                }
+                if (miner.IsBuilt && IsPointTooCloseToRect(conveyorCenter, miner.X, miner.Y, miner.Width, miner.Height, 5))
+                    return false;
             }
 
             foreach (var armsFactory in armsFactories)
             {
-                if (armsFactory.IsBuilt)
-                {
-                    if (IsPointTooCloseToRect(conveyorCenter, armsFactory.X, armsFactory.Y, armsFactory.Width, armsFactory.Height, 5))
-                        return false;
-                }
+                if (armsFactory.IsBuilt && IsPointTooCloseToRect(conveyorCenter, armsFactory.X, armsFactory.Y, armsFactory.Width, armsFactory.Height, 5))
+                    return false;
             }
 
             return true;
@@ -209,50 +194,34 @@ namespace Factorio
         {
             foreach (var smelter in smelters)
             {
-                if (smelter.IsBuilt)
-                {
-                    Rect smelterRect = new Rect(smelter.X, smelter.Y, smelter.Width, smelter.Height);
-                    if (RectanglesIntersectWithMargin(newBuildingRect, smelterRect, 5))
-                        return false;
-                }
+                if (smelter.IsBuilt && RectanglesIntersectWithMargin(newBuildingRect, new Rect(smelter.X, smelter.Y, smelter.Width, smelter.Height), 5))
+                    return false;
             }
 
             foreach (var miner in miners)
             {
-                if (miner.IsBuilt)
-                {
-                    Rect minerRect = new Rect(miner.X, miner.Y, miner.Width, miner.Height);
-                    if (RectanglesIntersectWithMargin(newBuildingRect, minerRect, 5))
-                        return false;
-                }
+                if (miner.IsBuilt && RectanglesIntersectWithMargin(newBuildingRect, new Rect(miner.X, miner.Y, miner.Width, miner.Height), 5))
+                    return false;
             }
 
             foreach (var conveyor in conveyors)
             {
-                if (conveyor.IsBuilt)
-                {
-                    Rect conveyorRect = new Rect(conveyor.X, conveyor.Y, conveyor.Width, conveyor.Height);
-                    if (buildingType != "conveyor" && RectanglesIntersectWithMargin(newBuildingRect, conveyorRect, 5))
-                        return false;
-                }
+                if (conveyor.IsBuilt && buildingType != "conveyor" &&
+                    RectanglesIntersectWithMargin(newBuildingRect, new Rect(conveyor.X, conveyor.Y, conveyor.Width, conveyor.Height), 5))
+                    return false;
             }
 
             foreach (var armsFactory in armsFactories)
             {
-                if (armsFactory.IsBuilt)
-                {
-                    Rect armsFactoryRect = new Rect(armsFactory.X, armsFactory.Y, armsFactory.Width, armsFactory.Height);
-                    if (RectanglesIntersectWithMargin(newBuildingRect, armsFactoryRect, 5))
-                        return false;
-                }
+                if (armsFactory.IsBuilt && RectanglesIntersectWithMargin(newBuildingRect, new Rect(armsFactory.X, armsFactory.Y, armsFactory.Width, armsFactory.Height), 5))
+                    return false;
             }
 
             if (buildingType != "miner")
             {
                 foreach (var resource in resources)
                 {
-                    Rect resourceRect = new Rect(resource.X, resource.Y, resource.Width, resource.Height);
-                    if (RectanglesIntersectWithMargin(newBuildingRect, resourceRect, 5))
+                    if (RectanglesIntersectWithMargin(newBuildingRect, new Rect(resource.X, resource.Y, resource.Width, resource.Height), 5))
                         return false;
                 }
             }
@@ -267,23 +236,14 @@ namespace Factorio
 
         private bool IsPointTooCloseToRect(Point point, double rectX, double rectY, double rectWidth, double rectHeight, double margin = 0)
         {
-            double centerX = rectX + rectWidth / 2;
-            double centerY = rectY + rectHeight / 2;
-
-            if (point.X >= rectX - margin && point.X <= rectX + rectWidth + margin &&
-                point.Y >= rectY - margin && point.Y <= rectY + rectHeight + margin)
-            {
-                return true;
-            }
-
-            return false;
+            return point.X >= rectX - margin && point.X <= rectX + rectWidth + margin &&
+                   point.Y >= rectY - margin && point.Y <= rectY + rectHeight + margin;
         }
 
         private bool RectanglesIntersectWithMargin(Rect rect1, Rect rect2, double margin = 0)
         {
             Rect expandedRect1 = new Rect(rect1.X - margin, rect1.Y - margin, rect1.Width + 2 * margin, rect1.Height + 2 * margin);
             Rect expandedRect2 = new Rect(rect2.X - margin, rect2.Y - margin, rect2.Width + 2 * margin, rect2.Height + 2 * margin);
-
             return expandedRect1.IntersectsWith(expandedRect2);
         }
 
@@ -291,17 +251,15 @@ namespace Factorio
         {
             if (rect1.Width == 30 && rect1.Height == 30 && rect2.Width == 30 && rect2.Height == 30)
             {
-                // Конвейеры могут касаться, но не пересекаться
                 return rect1.IntersectsWith(rect2) &&
-                       !(rect1.X + rect1.Width <= rect2.X || // справа
-                         rect1.X >= rect2.X + rect2.Width || // слева
-                         rect1.Y + rect1.Height <= rect2.Y || // снизу
-                         rect1.Y >= rect2.Y + rect2.Height);  // сверху
+                       !(rect1.X + rect1.Width <= rect2.X ||
+                         rect1.X >= rect2.X + rect2.Width ||
+                         rect1.Y + rect1.Height <= rect2.Y ||
+                         rect1.Y >= rect2.Y + rect2.Height);
             }
 
             Rect expandedRect1 = new Rect(rect1.X - 5, rect1.Y - 5, rect1.Width + 10, rect1.Height + 10);
             Rect expandedRect2 = new Rect(rect2.X - 5, rect2.Y - 5, rect2.Width + 10, rect2.Height + 10);
-
             return expandedRect1.IntersectsWith(expandedRect2);
         }
 
@@ -314,17 +272,11 @@ namespace Factorio
             HealthText.Text = $"{player.Health}/{player.MaxHealth}";
 
             if (player.Health <= 1)
-            {
                 HealthBar.Foreground = Brushes.Red;
-            }
             else if (player.Health <= 2)
-            {
                 HealthBar.Foreground = Brushes.Yellow;
-            }
             else
-            {
                 HealthBar.Foreground = Brushes.LimeGreen;
-            }
 
             if (player.IsDead)
             {
@@ -339,9 +291,7 @@ namespace Factorio
         {
             var gridElements = GameCanvas.Children.OfType<Rectangle>().Where(r => r.Name == "GridLine").ToList();
             foreach (var element in gridElements)
-            {
                 GameCanvas.Children.Remove(element);
-            }
 
             if (!isGridVisible) return;
 
@@ -381,10 +331,8 @@ namespace Factorio
         private void CreateTileMapToFillWindow()
         {
             GameCanvas.Children.Clear();
-
             double canvasWidth = this.ActualWidth;
             double canvasHeight = this.ActualHeight;
-
             double tileWidth = canvasWidth / mapWidth;
             double tileHeight = canvasHeight / mapHeight;
 
@@ -393,7 +341,6 @@ namespace Factorio
                 for (int col = 0; col < mapWidth; col++)
                 {
                     int textureIndex = random.Next(texturePaths.Length);
-
                     Image tile = new Image
                     {
                         Width = tileWidth,
@@ -401,10 +348,8 @@ namespace Factorio
                         Source = new BitmapImage(new Uri(texturePaths[textureIndex])),
                         Stretch = Stretch.UniformToFill
                     };
-
                     Canvas.SetLeft(tile, col * tileWidth);
                     Canvas.SetTop(tile, row * tileHeight);
-
                     GameCanvas.Children.Add(tile);
                 }
             }
@@ -425,21 +370,14 @@ namespace Factorio
             player.UpdateMining(resources, isMiningPressed);
 
             foreach (var miner in miners)
-            {
-                if (miner.IsBuilt)
-                {
-                    miner.CheckPlacementOnResource(resources);
-                }
-            }
+                if (miner.IsBuilt) miner.CheckPlacementOnResource(resources);
 
             UpdateInsects();
-
             UpdatePlayerHealth();
         }
 
         private void UpdateInsects()
         {
-            // Удаляем мертвых жуков
             for (int i = insects.Count - 1; i >= 0; i--)
             {
                 if (insects[i].IsDead)
@@ -456,76 +394,43 @@ namespace Factorio
             double deltaY = 0;
             Direction direction = Direction.Down;
 
-            if (isUpPressed && !isDownPressed)
-            {
-                deltaY = -1;
-                direction = Direction.Up;
-            }
-            else if (isDownPressed && !isUpPressed)
-            {
-                deltaY = 1;
-                direction = Direction.Down;
-            }
+            if (isUpPressed && !isDownPressed) { deltaY = -1; direction = Direction.Up; }
+            else if (isDownPressed && !isUpPressed) { deltaY = 1; direction = Direction.Down; }
 
-            if (isLeftPressed && !isRightPressed)
-            {
-                deltaX = -1;
-                direction = Direction.Left;
-            }
-            else if (isRightPressed && !isLeftPressed)
-            {
-                deltaX = 1;
-                direction = Direction.Right;
-            }
+            if (isLeftPressed && !isRightPressed) { deltaX = -1; direction = Direction.Left; }
+            else if (isRightPressed && !isLeftPressed) { deltaX = 1; direction = Direction.Right; }
 
             if (Math.Abs(deltaX) > 0 && Math.Abs(deltaY) > 0)
             {
                 double length = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
-                deltaX /= length;
-                deltaY /= length;
+                deltaX /= length; deltaY /= length;
                 if (deltaX < 0) direction = Direction.Left;
                 else if (deltaX > 0) direction = Direction.Right;
             }
 
             if (deltaX != 0 || deltaY != 0)
-            {
                 player.Move(deltaX, deltaY, direction);
-            }
             else
-            {
                 player.Stop();
-            }
         }
 
         private void SpawnInitialResources()
         {
-            int resourceCount = 25;
-            for (int i = 0; i < resourceCount; i++)
-            {
+            for (int i = 0; i < 25; i++)
                 SpawnRandomResource();
-            }
         }
 
         private void SpawnRandomResource()
         {
             int attempts = 0;
-            double x = 0;
-            double y = 0;
+            double x = 0, y = 0;
 
-            // Пытаемся найти валидную позицию
             do
             {
                 x = random.Next(50, (int)this.ActualWidth - 100);
                 y = random.Next(50, (int)this.ActualHeight - 200);
                 attempts++;
-
-                if (attempts > 100)
-                {
-                    x = random.Next(50, (int)this.ActualWidth - 100);
-                    y = random.Next(50, (int)this.ActualHeight - 200);
-                    break;
-                }
-
+                if (attempts > 100) break;
             } while (!IsResourcePositionValid(x, y, 80));
 
             double distanceToPlayer = Math.Sqrt(Math.Pow(x - player.X, 2) + Math.Pow(y - player.Y, 2));
@@ -543,14 +448,11 @@ namespace Factorio
 
         private bool IsResourcePositionValid(double x, double y, double minDistance = 80)
         {
-            // Проверяем расстояние до других ресурсов
             foreach (var resource in resources)
             {
                 double distance = Math.Sqrt(Math.Pow(resource.X - x, 2) + Math.Pow(resource.Y - y, 2));
-                if (distance < minDistance)
-                    return false;
+                if (distance < minDistance) return false;
             }
-
             return true;
         }
 
@@ -564,144 +466,91 @@ namespace Factorio
             switch (e.Key)
             {
                 case Key.Escape:
-                    if (isBuildingMode)
-                    {
-                        CancelBuildingMode();
-                    }
-                    else if (isConnectingMode)
-                    {
-                        CancelConnectionMode();
-                    }
-                    else
-                    {
-                        this.Close();
-                    }
+                    if (isBuildingMode) CancelBuildingMode();
+                    else if (isSelectingConveyorForBuilding) CancelSelectConveyorForBuilding();
+                    else this.Close();
                     break;
-                case Key.W:
-                case Key.Up:
-                    isUpPressed = true;
-                    break;
-                case Key.S:
-                case Key.Down:
-                    isDownPressed = true;
-                    break;
-                case Key.A:
-                case Key.Left:
-                    isLeftPressed = true;
-                    break;
-                case Key.D:
-                case Key.Right:
-                    isRightPressed = true;
-                    break;
-                case Key.Space:
-                    isMiningPressed = true;
-                    break;
-                case Key.R:
-                    SpawnRandomResource();
-                    break;
-                case Key.I:
-                    ShowInventoryInfo();
-                    break;
+
+                case Key.W: case Key.Up: isUpPressed = true; break;
+                case Key.S: case Key.Down: isDownPressed = true; break;
+                case Key.A: case Key.Left: isLeftPressed = true; break;
+                case Key.D: case Key.Right: isRightPressed = true; break;
+                case Key.Space: isMiningPressed = true; break;
+                case Key.R: SpawnRandomResource(); break;
+                case Key.I: ShowInventoryInfo(); break;
+
                 case Key.Tab:
-                    if (!isBuildingMode && !isBuildingLine && !isConnectingMode)
-                    {
+                    if (!isBuildingMode && !isBuildingLine && !isSelectingConveyorForBuilding)
                         OpenBuildMenu();
-                    }
                     else
                     {
                         CancelBuildingMode();
                         CancelLineMode();
-                        CancelConnectionMode();
+                        CancelSelectConveyorForBuilding();
                     }
                     e.Handled = true;
                     break;
-                case Key.L:
-                    if (!isBuildingMode && !isConnectingMode)
-                    {
-                        StartLineMode();
-                    }
-                    break;
-                case Key.C:
-                    if (isBuildingMode)
-                    {
-                        CancelBuildingMode();
-                    }
 
-                    if (isConnectingMode)
-                    {
-                        CancelConnectionMode();
-                    }
-                    else
-                    {
-                        StartConnectionMode();
-                    }
+                case Key.L:
+                    if (!isBuildingMode && !isSelectingConveyorForBuilding)
+                        StartLineMode();
                     break;
-                case Key.T:
-                    CreateTestSetup();
+
+                case Key.C:
+                    if (isBuildingMode) CancelBuildingMode();
+                    else if (isSelectingConveyorForBuilding) CancelSelectConveyorForBuilding();
+                    else ShowMessage("Используйте ПРАВЫЙ клик по зданию для соединения с конвейером");
                     break;
-                case Key.G:
-                    ToggleGrid();
-                    break;
+
+                case Key.T: CreateTestSetup(); break;
+                case Key.G: ToggleGrid(); break;
+
                 case Key.M:
-                    // Если не в режиме постройки - спавним жуков
-                    if (!isBuildingMode && !isBuildingLine && !isConnectingMode)
-                    {
+                    if (!isBuildingMode && !isBuildingLine && !isSelectingConveyorForBuilding)
                         SpawnInsects();
-                    }
                     else
-                    {
                         ShowInventoryInfo();
-                    }
                     break;
+
                 case Key.E:
-                    // Экстренное удаление - для отладки
                     if (Keyboard.Modifiers == ModifierKeys.Control)
-                    {
                         EmergencyCleanup();
-                    }
                     break;
             }
+        }
+
+        private void CancelSelectConveyorForBuilding()
+        {
+            isSelectingConveyorForBuilding = false;
+            selectedBuildingForConnection = null;
+
+            foreach (var conveyor in conveyors)
+                conveyor.Sprite.Opacity = 1.0;
+
+            BuildHint.Visibility = Visibility.Collapsed;
         }
 
         private void SpawnInsects()
         {
             Random random = new Random();
-            int insectCount = random.Next(2, 6); // От 2 до 5 жуков
-
+            int insectCount = random.Next(2, 6);
             for (int i = 0; i < insectCount; i++)
-            {
                 SpawnInsect();
-            }
-
             ShowMessage($"Появилось {insectCount} жуков!");
         }
 
         private void SpawnInsect()
         {
             Random random = new Random();
-
-            // Выбираем случайную сторону экрана
-            int side = random.Next(4); // 0: верх, 1: низ, 2: лево, 3: право
+            int side = random.Next(4);
             double x, y;
 
             switch (side)
             {
-                case 0: // Верх
-                    x = random.Next((int)this.ActualWidth);
-                    y = -50;
-                    break;
-                case 1: // Низ
-                    x = random.Next((int)this.ActualWidth);
-                    y = this.ActualHeight + 50;
-                    break;
-                case 2: // Лево
-                    x = -50;
-                    y = random.Next((int)this.ActualHeight);
-                    break;
-                default: // Право
-                    x = this.ActualWidth + 50;
-                    y = random.Next((int)this.ActualHeight);
-                    break;
+                case 0: x = random.Next((int)this.ActualWidth); y = -50; break;
+                case 1: x = random.Next((int)this.ActualWidth); y = this.ActualHeight + 50; break;
+                case 2: x = -50; y = random.Next((int)this.ActualHeight); break;
+                default: x = this.ActualWidth + 50; y = random.Next((int)this.ActualHeight); break;
             }
 
             Insect insect = new Insect(x, y, player);
@@ -733,7 +582,6 @@ namespace Factorio
             buildingToPlace = buildingType;
             CloseBuildMenu();
 
-            // Создаем превью здания
             var size = GetBuildingSize(buildingType);
             buildingPreview = new Image
             {
@@ -752,7 +600,7 @@ namespace Factorio
                 "miner" => "Кликните НА РЕСУРС для постройки добытчика (5 жел.слитков + 5 мед.слитков)",
                 "conveyor" => "Кликните для постройки конвейера (2 железных слитка)",
                 "arms_factory" => "Кликните на место для постройки оружейного завода (15 камня + 10 жел.слитков + 10 мед.слитков)",
-                "cannon" => "Кликните на место для постройки пушки (5 жел.слитков + 6 деталей + 3 патрона)", // Новая строка
+                "cannon" => "Кликните на место для постройки пушки (5 жел.слитков + 6 деталей + 3 патрона)",
                 _ => "Кликните на место для постройки"
             };
         }
@@ -771,20 +619,13 @@ namespace Factorio
             };
 
             string filePath = System.IO.Path.Combine(basePath, fileName);
-
-            if (File.Exists(filePath))
-            {
-                return new BitmapImage(new Uri(filePath));
-            }
-
-            return CreatePlaceholderBuildingPreview(buildingType);
+            return File.Exists(filePath) ? new BitmapImage(new Uri(filePath)) : CreatePlaceholderBuildingPreview(buildingType);
         }
 
         private BitmapImage CreatePlaceholderBuildingPreview(string buildingType)
         {
             var size = GetBuildingSize(buildingType);
-            int width = (int)size.Width;
-            int height = (int)size.Height;
+            int width = (int)size.Width, height = (int)size.Height;
 
             string text = buildingType switch
             {
@@ -812,15 +653,8 @@ namespace Factorio
                 drawingContext.DrawRectangle(color, null, new Rect(0, 0, width, height));
                 drawingContext.DrawRectangle(Brushes.Black, new Pen(Brushes.Black, 2), new Rect(0, 0, width, height));
 
-                var formattedText = new FormattedText(
-                    text,
-                    System.Globalization.CultureInfo.CurrentCulture,
-                    FlowDirection.LeftToRight,
-                    new Typeface("Arial"),
-                    width < 50 ? 14 : 20,
-                    Brushes.White,
-                    1.0);
-
+                var formattedText = new FormattedText(text, System.Globalization.CultureInfo.CurrentCulture,
+                    FlowDirection.LeftToRight, new Typeface("Arial"), width < 50 ? 14 : 20, Brushes.White, 1.0);
                 drawingContext.DrawText(formattedText, new Point(width / 2 - 15, height / 2 - 10));
             }
 
@@ -861,50 +695,26 @@ namespace Factorio
             isBuildingLine = false;
             isLineFirstClick = true;
 
-            // Удаляем превью конвейеров
             foreach (var conveyor in linePreviewConveyors)
-            {
                 conveyor.RemoveFromCanvas(GameCanvas);
-            }
             linePreviewConveyors.Clear();
 
             BuildHint.Visibility = Visibility.Collapsed;
         }
 
-        private void CancelConnectionMode()
-        {
-            isConnectingMode = false;
-            connectionSource = null;
-            connectionTarget = null;
-            BuildHint.Visibility = Visibility.Collapsed;
-        }
-
         private bool HasBuildingResources(string buildingType)
         {
-            if (buildingType == "smelter")
+            return buildingType switch
             {
-                return player.CanBuildSmelter();
-            }
-            else if (buildingType == "miner")
-            {
-                return player.CanBuildMiner();
-            }
-            else if (buildingType == "conveyor")
-            {
-                return player.HasResources(ResourceType.IronIngot, 2);
-            }
-            else if (buildingType == "arms_factory")
-            {
-                return player.CanBuildArmsFactory();
-            }
-            else if (buildingType == "cannon")
-            {
-                return player.HasResources(ResourceType.IronIngot, 5) &&
-                       player.HasResources(ResourceType.Gears, 6) &&
-                       player.HasResources(ResourceType.Ammo, 3);
-            }
-
-            return false;
+                "smelter" => player.CanBuildSmelter(),
+                "miner" => player.CanBuildMiner(),
+                "conveyor" => player.HasResources(ResourceType.IronIngot, 2),
+                "arms_factory" => player.CanBuildArmsFactory(),
+                "cannon" => player.HasResources(ResourceType.IronIngot, 5) &&
+                           player.HasResources(ResourceType.Gears, 6) &&
+                           player.HasResources(ResourceType.Ammo, 3),
+                _ => false
+            };
         }
 
         private void GameCanvas_MouseMove(object sender, MouseEventArgs e)
@@ -916,21 +726,17 @@ namespace Factorio
                 var offset = GetBuildingCenterOffset(buildingToPlace);
                 var size = GetBuildingSize(buildingToPlace);
 
-                // Правильное центрирование: отнимаем половину размера здания
                 double buildingX = snappedPosition.X - offset.X;
                 double buildingY = snappedPosition.Y - offset.Y;
 
-                // Убедимся, что позиция соответствует сетке
                 buildingX = Math.Floor(buildingX / GridSize) * GridSize;
                 buildingY = Math.Floor(buildingY / GridSize) * GridSize;
 
                 Canvas.SetLeft(buildingPreview, buildingX);
                 Canvas.SetTop(buildingPreview, buildingY);
 
-                // Проверяем валидность позиции
                 bool isValidPosition = IsBuildingPlacementValid(buildingX, buildingY, buildingToPlace);
 
-                // Для добытчика дополнительно проверяем, что он на ресурсе
                 if (buildingToPlace == "miner" && isValidPosition)
                 {
                     bool isOnResource = false;
@@ -939,8 +745,6 @@ namespace Factorio
                     foreach (var resource in resources)
                     {
                         Rect resourceRect = new Rect(resource.X, resource.Y, resource.Width, resource.Height);
-
-                        // Проверяем, что добытчик полностью или частично находится на ресурсе
                         if (minerRect.IntersectsWith(resourceRect))
                         {
                             isOnResource = true;
@@ -949,66 +753,46 @@ namespace Factorio
                     }
 
                     isValidPosition = isValidPosition && isOnResource;
-
-                    if (isOnResource)
-                    {
-                        buildingPreview.Opacity = 0.7;
-                        BuildHintText.Text = "Кликните для постройки на этом ресурсе";
-                    }
-                    else
-                    {
-                        buildingPreview.Opacity = 0.3;
-                        BuildHintText.Text = "Добытчик должен быть построен НА РЕСУРСЕ!";
-                    }
+                    buildingPreview.Opacity = isOnResource ? 0.7 : 0.3;
+                    BuildHintText.Text = isOnResource ? "Кликните для постройки на этом ресурсе" : "Добытчик должен быть построен НА РЕСУРСЕ!";
                 }
                 else
                 {
                     buildingPreview.Opacity = isValidPosition ? 0.7 : 0.3;
-
-                    if (isValidPosition)
+                    BuildHintText.Text = isValidPosition ? buildingToPlace switch
                     {
-                        BuildHintText.Text = buildingToPlace switch
-                        {
-                            "smelter" => "Кликните для постройки плавильни (10 камня + 5 угля)",
-                            "conveyor" => "Кликните для постройки конвейера (2 железных слитка)",
-                            "arms_factory" => "Кликните для постройки оружейного завода (15 камня + 10 жел.слитков + 10 мед.слитков)",
-                            _ => "Кликните для постройки"
-                        };
-                    }
-                    else
-                    {
-                        BuildHintText.Text = "Нельзя построить здесь (занято, слишком далеко или вне границ)";
-                    }
+                        "smelter" => "Кликните для постройки плавильни (10 камня + 5 угля)",
+                        "conveyor" => "Кликните для постройки конвейера (2 железных слитка)",
+                        "arms_factory" => "Кликните для постройки оружейного завода (15 камня + 10 жел.слитков + 10 мед.слитков)",
+                        "cannon" => "Кликните для постройки пушки (5 жел.слитков + 6 деталей + 3 патрона)",
+                        _ => "Кликните для постройки"
+                    } : "Нельзя построить здесь (занято, слишком далеко или вне границ)";
                 }
             }
             else if (isBuildingLine)
             {
                 var position = e.GetPosition(GameCanvas);
                 var snappedPosition = SnapToGrid(position);
-
-                // Обновляем превью линии
                 UpdateLinePreview(snappedPosition);
             }
-            else if (isConnectingMode)
+            else if (isSelectingConveyorForBuilding)
             {
                 var position = e.GetPosition(GameCanvas);
+                var conveyorAtCursor = FindConveyorAtPoint(position);
 
-                // Проверяем, находится ли курсор над зданием
-                var buildingAtCursor = FindBuildingAtPoint(position);
+                foreach (var conveyor in conveyors)
+                    conveyor.Sprite.Opacity = 1.0;
 
-                if (buildingAtCursor != null)
+                if (conveyorAtCursor != null)
                 {
-                    string buildingName = GetBuildingName(buildingAtCursor);
-                    BuildHintText.Text = $"Наведено на: {buildingName}\n" +
-                                       (connectionSource == null ?
-                                        "Кликните, чтобы выбрать как ИСТОЧНИК" :
-                                        "Кликните, чтобы выбрать как ЦЕЛЬ");
+                    BuildHintText.Text = $"Конвейер выбран: ({conveyorAtCursor.X}, {conveyorAtCursor.Y})\n" +
+                                       $"Направление: {conveyorAtCursor.Direction}\n" +
+                                       "Кликните, чтобы соединить с зданием";
+                    conveyorAtCursor.Sprite.Opacity = 0.9;
                 }
                 else
                 {
-                    BuildHintText.Text = "СОЕДИНЕНИЕ КОНВЕЙЕРОВ:\n" +
-                                        "1. Выберите ИСТОЧНИК (майнер/плавильня)\n" +
-                                        "2. Выберите ЦЕЛЬ (плавильня/оружейный завод)";
+                    BuildHintText.Text = "Выберите конвейер для соединения с зданием";
                 }
             }
         }
@@ -1028,11 +812,7 @@ namespace Factorio
                 }
             }
 
-            if (!hasItems)
-            {
-                info += "Пусто";
-            }
-
+            if (!hasItems) info += "Пусто";
             ShowMessage(info);
         }
 
@@ -1040,25 +820,11 @@ namespace Factorio
         {
             switch (e.Key)
             {
-                case Key.W:
-                case Key.Up:
-                    isUpPressed = false;
-                    break;
-                case Key.S:
-                case Key.Down:
-                    isDownPressed = false;
-                    break;
-                case Key.A:
-                case Key.Left:
-                    isLeftPressed = false;
-                    break;
-                case Key.D:
-                case Key.Right:
-                    isRightPressed = false;
-                    break;
-                case Key.Space:
-                    isMiningPressed = false;
-                    break;
+                case Key.W: case Key.Up: isUpPressed = false; break;
+                case Key.S: case Key.Down: isDownPressed = false; break;
+                case Key.A: case Key.Left: isLeftPressed = false; break;
+                case Key.D: case Key.Right: isRightPressed = false; break;
+                case Key.Space: isMiningPressed = false; break;
             }
         }
 
@@ -1134,7 +900,6 @@ namespace Factorio
         {
             double startX = this.ActualWidth / 2 - 25;
             double startY = this.ActualHeight / 2 - 25;
-
             player = new Player(startX, startY, 50, 50);
             player.AddToCanvas(GameCanvas);
         }
@@ -1145,25 +910,76 @@ namespace Factorio
             var snappedPosition = SnapToGrid(position);
             Point clickPoint = new Point(snappedPosition.X, snappedPosition.Y);
 
-            // Обработка правого клика по зданиям для открытия интерфейса
-            if (e.RightButton == MouseButtonState.Pressed)
+            // Режим выбора конвейера для здания (левая кнопка)
+            if (isSelectingConveyorForBuilding && e.LeftButton == MouseButtonState.Pressed)
             {
-                HandleRightClick(clickPoint);
+                var conveyor = FindConveyorAtPoint(clickPoint);
+                if (conveyor != null)
+                {
+                    CompleteConveyorConnection(conveyor);
+                }
+                else
+                {
+                    ShowMessage("Кликните на конвейер!");
+                }
                 return;
             }
 
-            // Обработка левого клика для строительства
+            // Правый клик по зданиям для открытия меню соединения
+            if (e.RightButton == MouseButtonState.Pressed)
+            {
+                // Сначала проверяем, не в режиме ли выбора конвейера
+                if (isSelectingConveyorForBuilding)
+                {
+                    CancelSelectConveyorForBuilding();
+                    return;
+                }
+
+                var building = FindBuildingAtPoint(clickPoint);
+                if (building != null)
+                {
+                    ShowConnectionContextMenu(building, e.GetPosition(this));
+                    return;
+                }
+
+                // Проверяем плавильни
+                foreach (var smelter in smelters)
+                {
+                    if (smelter.IsBuilt && smelter.IsPointInside(clickPoint))
+                    {
+                        smelter.OpenInterface();
+                        return;
+                    }
+                }
+
+                // Проверяем добытчики
+                foreach (var miner in miners)
+                {
+                    if (miner.IsBuilt && miner.IsPointInside(clickPoint))
+                    {
+                        miner.OpenInterface();
+                        return;
+                    }
+                }
+
+                // Проверяем оружейные заводы
+                foreach (var armsFactory in armsFactories)
+                {
+                    if (armsFactory.IsBuilt && armsFactory.IsPointInside(clickPoint))
+                    {
+                        armsFactory.OpenInterface();
+                        return;
+                    }
+                }
+                return;
+            }
+
+            // Левая кнопка для обычных действий
             if (e.LeftButton == MouseButtonState.Pressed)
             {
                 if (isBuildingLine)
                 {
                     HandleLineModeClick(clickPoint);
-                    return;
-                }
-
-                if (isConnectingMode)
-                {
-                    HandleConnectionModeClick(clickPoint);
                     return;
                 }
 
@@ -1175,71 +991,24 @@ namespace Factorio
             }
         }
 
-        private void HandleRightClick(Point clickPoint)
-        {
-            // Проверяем плавильни
-            foreach (var smelter in smelters)
-            {
-                if (smelter.IsBuilt && smelter.IsPointInside(clickPoint))
-                {
-                    smelter.OpenInterface();
-                    return;
-                }
-            }
-
-            // Проверяем добытчики
-            foreach (var miner in miners)
-            {
-                if (miner.IsBuilt && miner.IsPointInside(clickPoint))
-                {
-                    miner.OpenInterface();
-                    return;
-                }
-            }
-
-            // Проверяем оружейные заводы
-            foreach (var armsFactory in armsFactories)
-            {
-                if (armsFactory.IsBuilt && armsFactory.IsPointInside(clickPoint))
-                {
-                    armsFactory.OpenInterface();
-                    return;
-                }
-            }
-        }
-
         private void HandleBuildingModeClick(Point clickPoint)
         {
             var offset = GetBuildingCenterOffset(buildingToPlace);
             double buildingX = clickPoint.X - offset.X;
             double buildingY = clickPoint.Y - offset.Y;
 
-            // Привязываем к сетке (как в превью)
             buildingX = Math.Floor(buildingX / GridSize) * GridSize;
             buildingY = Math.Floor(buildingY / GridSize) * GridSize;
 
             if (IsBuildingPlacementValid(buildingX, buildingY, buildingToPlace))
             {
-                if (buildingToPlace == "smelter")
+                switch (buildingToPlace)
                 {
-                    BuildSmelter(buildingX, buildingY);
-                }
-                else if (buildingToPlace == "miner")
-                {
-                    BuildMiner(buildingX, buildingY);
-                }
-                else if (buildingToPlace == "conveyor")
-                {
-                    // Показываем меню выбора направления
-                    ShowDirectionSelectionMenu(buildingX, buildingY);
-                }
-                else if (buildingToPlace == "arms_factory")
-                {
-                    BuildArmsFactory(buildingX, buildingY);
-                }
-                else if (buildingToPlace == "cannon")
-                {
-                    BuildCannon(buildingX, buildingY);
+                    case "smelter": BuildSmelter(buildingX, buildingY); break;
+                    case "miner": BuildMiner(buildingX, buildingY); break;
+                    case "conveyor": ShowDirectionSelectionMenu(buildingX, buildingY); break;
+                    case "arms_factory": BuildArmsFactory(buildingX, buildingY); break;
+                    case "cannon": BuildCannon(buildingX, buildingY); break;
                 }
             }
             else
@@ -1312,8 +1081,6 @@ namespace Factorio
             smelter.Build();
             smelter.AddToCanvas(GameCanvas);
             smelters.Add(smelter);
-
-            // Обновляем список плавилен у игрока
             player.SetSmelters(smelters);
 
             ShowMessage("Плавильня построена!");
@@ -1322,7 +1089,6 @@ namespace Factorio
 
         private void BuildMiner(double x, double y)
         {
-            // Находим ресурс под курсором
             Resource targetResource = null;
             var size = GetBuildingSize("miner");
             Rect minerRect = new Rect(x, y, size.Width, size.Height);
@@ -1386,9 +1152,7 @@ namespace Factorio
                 conveyor.Build();
                 conveyor.AddToCanvas(GameCanvas);
                 conveyors.Add(conveyor);
-
-                // Автоматически соединяем с соседними конвейерами
-                AutoConnectConveyor(conveyor);
+                GameCanvasHelper.AllConveyors = conveyors;
 
                 ShowMessage("Конвейер построен!");
                 CancelBuildingMode();
@@ -1396,7 +1160,6 @@ namespace Factorio
             else
             {
                 ShowMessage("Нельзя построить конвейер здесь!");
-                // Возвращаем ресурсы
                 player.AddResource(ResourceType.IronIngot, 2);
             }
         }
@@ -1426,36 +1189,8 @@ namespace Factorio
 
         private void AutoConnectConveyor(Conveyor newConveyor)
         {
-            List<Conveyor> adjacent = newConveyor.GetAdjacentConveyors(conveyors);
-
-            foreach (var adjacentConveyor in adjacent)
-            {
-                // Проверяем расстояние - должны быть точно рядом
-                double distanceX = Math.Abs(newConveyor.X - adjacentConveyor.X);
-                double distanceY = Math.Abs(newConveyor.Y - adjacentConveyor.Y);
-
-                // Должны быть в соседних клетках (расстояние равно размеру клетки)
-                if ((distanceX == GridSize && distanceY == 0) || // горизонтальные соседи
-                    (distanceY == GridSize && distanceX == 0))   // вертикальные соседи
-                {
-                    // Проверяем, смотрит ли новый конвейер на соседний
-                    if (newConveyor.IsNextInDirection(adjacentConveyor))
-                    {
-                        if (newConveyor.NextConveyor == null && adjacentConveyor.PreviousConveyor == null)
-                        {
-                            newConveyor.SetNextConveyor(adjacentConveyor);
-                        }
-                    }
-                    // Проверяем, смотрит ли соседний конвейер на новый
-                    else if (adjacentConveyor.IsNextInDirection(newConveyor))
-                    {
-                        if (adjacentConveyor.NextConveyor == null && newConveyor.PreviousConveyor == null)
-                        {
-                            adjacentConveyor.SetNextConveyor(newConveyor);
-                        }
-                    }
-                }
-            }
+            conveyors.Add(newConveyor);
+            GameCanvasHelper.AllConveyors = conveyors;
         }
 
         // РЕЖИМ ПОСТРОЕНИЯ ЛИНИИ КОНВЕЙЕРОВ
@@ -1482,17 +1217,12 @@ namespace Factorio
         {
             if (!isBuildingLine || isLineFirstClick) return;
 
-            // Очищаем превью
             foreach (var conveyor in linePreviewConveyors)
-            {
                 conveyor.RemoveFromCanvas(GameCanvas);
-            }
             linePreviewConveyors.Clear();
 
-            // Вычисляем путь между точками
             List<Point> pathPoints = CalculateLinePath(lineStartPoint, currentPoint);
 
-            // Создаем превью конвейеров
             foreach (var point in pathPoints)
             {
                 Direction direction = CalculateDirectionBetweenPoints(lineStartPoint, point);
@@ -1509,7 +1239,6 @@ namespace Factorio
         {
             List<Point> path = new List<Point>();
 
-            // Если точки совпадают
             if (Math.Abs(start.X - end.X) < 5 && Math.Abs(start.Y - end.Y) < 5)
             {
                 path.Add(start);
@@ -1521,9 +1250,7 @@ namespace Factorio
             {
                 int step = start.X < end.X ? GridSize : -GridSize;
                 for (double x = start.X; Math.Abs(x - end.X) > GridSize / 2; x += step)
-                {
                     path.Add(new Point(x, start.Y));
-                }
                 path.Add(end);
             }
             // Вертикальная линия
@@ -1531,243 +1258,159 @@ namespace Factorio
             {
                 int step = start.Y < end.Y ? GridSize : -GridSize;
                 for (double y = start.Y; Math.Abs(y - end.Y) > GridSize / 2; y += step)
-                {
                     path.Add(new Point(start.X, y));
-                }
                 path.Add(end);
             }
             else
             {
-                // L-образный путь: сначала горизонталь, потом вертикаль
+                // L-образный путь
                 int stepX = start.X < end.X ? GridSize : -GridSize;
                 int stepY = start.Y < end.Y ? GridSize : -GridSize;
 
-                // Горизонтальная часть
                 for (double x = start.X; Math.Abs(x - end.X) > GridSize / 2; x += stepX)
-                {
                     path.Add(new Point(x, start.Y));
-                }
 
-                // Вертикальная часть (начинаем от последней точки + шаг)
                 Point lastPoint = path.Last();
                 for (double y = lastPoint.Y + stepY; Math.Abs(y - end.Y) > GridSize / 2; y += stepY)
-                {
                     path.Add(new Point(end.X, y));
-                }
                 path.Add(end);
             }
 
-            return path.Distinct().ToList(); // Удаляем дубликаты
+            return path.Distinct().ToList();
         }
 
         private Direction CalculateDirectionBetweenPoints(Point from, Point to)
         {
-            if (Math.Abs(to.Y - from.Y) < GridSize) // Горизонтальное движение
-            {
+            if (Math.Abs(to.Y - from.Y) < GridSize)
                 return to.X > from.X ? Direction.Right : Direction.Left;
-            }
-            else // Вертикальное движение
-            {
+            else
                 return to.Y > from.Y ? Direction.Down : Direction.Up;
-            }
         }
 
         private void HandleLineModeClick(Point clickPoint)
         {
             if (isLineFirstClick)
             {
-                // Первый клик - запоминаем начальную точку
                 lineStartPoint = clickPoint;
                 isLineFirstClick = false;
                 BuildHintText.Text = "Начальная точка выбрана. Кликните на конечную точку.";
             }
             else
             {
-                // Второй клик - строим линию
-                BuildLineBetweenPoints(lineStartPoint, clickPoint);
                 CancelLineMode();
             }
         }
 
-        private void BuildLineBetweenPoints(Point start, Point end)
+
+        // НОВЫЕ МЕТОДЫ ДЛЯ СОЕДИНЕНИЯ КОНВЕЙЕРОВ С ЗДАНИЯМИ
+
+        private void StartSelectConveyorForBuilding(object building, bool isInput)
         {
-            // Вычисляем путь
-            List<Point> pathPoints = CalculateLinePath(start, end);
-
-            if (pathPoints.Count == 0)
+            if (building == null)
             {
-                ShowMessage("Линия слишком короткая!");
+                ShowMessage("Ошибка: здание не выбрано!");
                 return;
             }
 
-            // Проверяем достаточно ли ресурсов
-            int requiredIron = pathPoints.Count * 2;
-            if (!player.HasResources(ResourceType.IronIngot, requiredIron))
-            {
-                ShowMessage($"Недостаточно железных слитков! Нужно: {requiredIron}");
-                return;
-            }
+            isSelectingConveyorForBuilding = true;
+            selectedBuildingForConnection = building;
+            isConnectingInput = isInput;
 
-            List<Conveyor> newConveyors = new List<Conveyor>();
-
-            // Строим конвейеры
-            for (int i = 0; i < pathPoints.Count; i++)
-            {
-                Point point = pathPoints[i];
-
-                // Определяем направление
-                Direction direction;
-                if (i < pathPoints.Count - 1)
-                {
-                    direction = CalculateDirectionBetweenPoints(point, pathPoints[i + 1]);
-                }
-                else if (i > 0)
-                {
-                    direction = CalculateDirectionBetweenPoints(pathPoints[i - 1], point);
-                }
-                else
-                {
-                    direction = Direction.Right; // По умолчанию
-                }
-
-                // Проверяем, можно ли построить здесь
-                if (!IsBuildingPlacementValid(point.X, point.Y, "conveyor", false))
-                {
-                    ShowMessage($"Нельзя построить конвейер на позиции ({point.X}, {point.Y})!");
-                    // Удаляем уже построенные
-                    foreach (var conv in newConveyors)
-                    {
-                        conv.RemoveFromCanvas(GameCanvas);
-                        conveyors.Remove(conv);
-                    }
-                    return;
-                }
-
-                // Платим ресурсы
-                if (!player.RemoveResources(ResourceType.IronIngot, 2))
-                {
-                    ShowMessage("Ошибка при оплате ресурсов!");
-                    return;
-                }
-
-                // Создаем конвейер
-                Conveyor newConveyor = new Conveyor(point.X, point.Y, direction); // Изменено имя переменной
-                newConveyor.Build();
-                newConveyor.AddToCanvas(GameCanvas);
-                conveyors.Add(newConveyor);
-                newConveyors.Add(newConveyor);
-            }
-
-            // Соединяем конвейеры в цепочку
-            for (int i = 0; i < newConveyors.Count - 1; i++)
-            {
-                newConveyors[i].SetNextConveyor(newConveyors[i + 1]);
-            }
-
-            // Автоматически соединяем каждый конвейер с соседями
-            foreach (var conv in newConveyors)
-            {
-                AutoConnectConveyor(conv);
-            }
-
-            ShowMessage($"Построена линия из {newConveyors.Count} конвейеров!");
-        }
-
-        // РЕЖИМ СОЕДИНЕНИЯ КОНВЕЙЕРОВ С ЗДАНИЯМИ
-        private void StartConnectionMode()
-        {
-            if (conveyors.Count == 0)
-            {
-                ShowMessage("Нет конвейеров для соединения!");
-                return;
-            }
-
-            if (miners.Count == 0 && smelters.Count == 0 && armsFactories.Count == 0)
-            {
-                ShowMessage("Нет зданий для соединения!");
-                return;
-            }
-
-            isConnectingMode = true;
-            connectionSource = null;
-            connectionTarget = null;
+            CancelBuildingMode();
+            CancelLineMode();
 
             BuildHint.Visibility = Visibility.Visible;
-            BuildHintText.Text = "СОЕДИНЕНИЕ КОНВЕЙЕРОВ:\n" +
-                                "1. Выберите ИСТОЧНИК (майнер/плавильня)\n" +
-                                "2. Выберите ЦЕЛЬ (плавильня/оружейный завод)\n" +
-                                "Система найдет ближайший конвейер к каждому зданию.";
+            BuildHintText.Text = isInput ?
+                "Выберите ВХОДНОЙ конвейер (должен быть направлен К зданию)" :
+                "Выберите ВЫХОДНОЙ конвейер (должен быть направлен ОТ здания)";
         }
 
-        private void HandleConnectionModeClick(Point clickPoint)
+        private void CompleteConveyorConnection(Conveyor conveyor)
         {
-            if (!isConnectingMode) return;
-
-            // Ищем здание под кликом
-            object clickedBuilding = FindBuildingAtPoint(clickPoint);
-
-            if (clickedBuilding == null)
+            if (selectedBuildingForConnection == null || conveyor == null)
             {
-                ShowMessage("Кликните на здание (майнер, плавильню или оружейный завод)!");
+                ShowMessage("Ошибка: не выбрано здание или конвейер!");
                 return;
             }
 
-            if (connectionSource == null)
+            if (!IsConveyorDirectionValid(conveyor, selectedBuildingForConnection, isConnectingInput))
             {
-                // Выбор источника
-                if (clickedBuilding is Miner || clickedBuilding is Smelter || clickedBuilding is ArmsFactory)
+                string directionError = isConnectingInput ?
+                    "Конвейер должен быть направлен К зданию!" :
+                    "Конвейер должен быть направлен ОТ здания!";
+                ShowMessage($"Неправильное направление! {directionError}");
+                return;
+            }
+
+            conveyor.LinkedBuilding = selectedBuildingForConnection;
+            conveyor.IsInputConveyor = isConnectingInput;
+            conveyor.IsOutputConveyor = !isConnectingInput;
+
+            ShowMessage($"{(isConnectingInput ? "Входной" : "Выходной")} конвейер соединён с {GetBuildingName(selectedBuildingForConnection)}");
+            CancelSelectConveyorForBuilding();
+        }
+
+        private bool IsConveyorDirectionValid(Conveyor conveyor, object building, bool isInput)
+        {
+            Point buildingCenter = GetBuildingCenter(building);
+            Point conveyorCenter = new Point(conveyor.X + conveyor.Width / 2, conveyor.Y + conveyor.Height / 2);
+
+            if (isInput)
+            {
+                return IsDirectionTowardBuilding(conveyor.Direction, conveyorCenter, buildingCenter);
+            }
+            else
+            {
+                return IsDirectionAwayFromBuilding(conveyor.Direction, conveyorCenter, buildingCenter);
+            }
+        }
+
+        private bool IsDirectionTowardBuilding(Direction direction, Point conveyorCenter, Point buildingCenter)
+        {
+            switch (direction)
+            {
+                case Direction.Right: return buildingCenter.X > conveyorCenter.X;
+                case Direction.Left: return buildingCenter.X < conveyorCenter.X;
+                case Direction.Down: return buildingCenter.Y > conveyorCenter.Y;
+                case Direction.Up: return buildingCenter.Y < conveyorCenter.Y;
+                default: return false;
+            }
+        }
+
+        private bool IsDirectionAwayFromBuilding(Direction direction, Point conveyorCenter, Point buildingCenter)
+        {
+            switch (direction)
+            {
+                case Direction.Right: return buildingCenter.X < conveyorCenter.X;
+                case Direction.Left: return buildingCenter.X > conveyorCenter.X;
+                case Direction.Down: return buildingCenter.Y < conveyorCenter.Y;
+                case Direction.Up: return buildingCenter.Y > conveyorCenter.Y;
+                default: return false;
+            }
+        }
+
+        private Conveyor FindConveyorAtPoint(Point point)
+        {
+            foreach (var conveyor in conveyors)
+            {
+                if (conveyor.IsBuilt && conveyor.IsPointInside(point))
                 {
-                    connectionSource = clickedBuilding;
-                    BuildHintText.Text = $"Источник выбран: {GetBuildingName(clickedBuilding)}\nТеперь выберите ЦЕЛЬ.";
-                }
-                else
-                {
-                    ShowMessage("Источником может быть майнер, плавильня или оружейный завод!");
+                    return conveyor;
                 }
             }
-            else if (connectionTarget == null)
-            {
-                // Выбор цели
-                if (clickedBuilding != connectionSource && (clickedBuilding is Smelter || clickedBuilding is ArmsFactory))
-                {
-                    connectionTarget = clickedBuilding;
-                    BuildHintText.Text = $"Цель выбрана: {GetBuildingName(clickedBuilding)}\nСоединяем...";
-
-                    // Соединяем здания через конвейеры
-                    ConnectBuildings(connectionSource, connectionTarget);
-
-                    // Сбрасываем режим
-                    CancelConnectionMode();
-                }
-                else
-                {
-                    ShowMessage("Целью может быть плавильня или оружейный завод (и не то же самое, что источник)!");
-                }
-            }
+            return null;
         }
 
         private object FindBuildingAtPoint(Point point)
         {
-            // Проверяем майнеры
             foreach (var miner in miners)
-            {
-                if (miner.IsBuilt && miner.IsPointInside(point))
-                    return miner;
-            }
+                if (miner.IsBuilt && miner.IsPointInside(point)) return miner;
 
-            // Проверяем плавильни
             foreach (var smelter in smelters)
-            {
-                if (smelter.IsBuilt && smelter.IsPointInside(point))
-                    return smelter;
-            }
+                if (smelter.IsBuilt && smelter.IsPointInside(point)) return smelter;
 
-            // Проверяем оружейные заводы
             foreach (var armsFactory in armsFactories)
-            {
-                if (armsFactory.IsBuilt && armsFactory.IsPointInside(point))
-                    return armsFactory;
-            }
+                if (armsFactory.IsBuilt && armsFactory.IsPointInside(point)) return armsFactory;
 
             return null;
         }
@@ -1780,336 +1423,52 @@ namespace Factorio
             return "Неизвестное здание";
         }
 
-        private void ConnectBuildings(object source, object target)
-        {
-            // Находим ближайший конвейер к источнику
-            Conveyor sourceConveyor = FindNearestConveyorToBuilding(source);
-            // Находим ближайший конвейер к цели
-            Conveyor targetConveyor = FindNearestConveyorToBuilding(target);
-
-            // Если нет конвейеров рядом, строим их
-            if (sourceConveyor == null || targetConveyor == null)
-            {
-                // Попробуем построить конвейеры между зданиями
-                if (TryBuildConveyorsBetweenBuildings(source, target))
-                {
-                    ShowMessage("Построены конвейеры и соединены!");
-                }
-                else
-                {
-                    ShowMessage("Не удалось построить соединение! Убедитесь, что есть конвейеры рядом с обоими зданиями.");
-                }
-                return;
-            }
-
-            // Находим путь между конвейерами
-            List<Conveyor> path = FindPathBetweenConveyors(sourceConveyor, targetConveyor);
-
-            if (path.Count == 0)
-            {
-                // Если не нашли путь, попробуем построить прямую линию
-                if (TryBuildDirectLine(sourceConveyor, targetConveyor, out path))
-                {
-                    ShowMessage($"Построена прямая линия через {path.Count} конвейеров!");
-                }
-                else
-                {
-                    ShowMessage("Не удалось найти путь между конвейерами!");
-                    return;
-                }
-            }
-
-            // Устанавливаем источник и цель для цепочки
-            if (path.Count > 0)
-            {
-                // Первый конвейер в цепочке получает источник
-                path[0].SourceBuilding = source;
-                // Последний конвейер в цепочке получает цель
-                path[path.Count - 1].TargetBuilding = target;
-            }
-
-            // Соединяем конвейеры в цепочку
-            for (int i = 0; i < path.Count - 1; i++)
-            {
-                path[i].SetNextConveyor(path[i + 1]);
-            }
-
-            ShowMessage($"Соединено! Путь через {path.Count} конвейеров.");
-        }
-
-        private bool TryBuildConveyorsBetweenBuildings(object source, object target)
-        {
-            Point sourcePoint = GetBuildingCenter(source);
-            Point targetPoint = GetBuildingCenter(target);
-
-            // Вычисляем расстояние между зданиями
-            double distance = Math.Sqrt(Math.Pow(targetPoint.X - sourcePoint.X, 2) +
-                                        Math.Pow(targetPoint.Y - sourcePoint.Y, 2));
-
-            // Если слишком далеко, не строим
-            if (distance > 500) return false;
-
-            // Строим линию конвейеров между точками
-            List<Point> pathPoints = CalculateLinePath(SnapToGrid(sourcePoint), SnapToGrid(targetPoint));
-
-            if (pathPoints.Count == 0) return false;
-
-            List<Conveyor> newConveyors = new List<Conveyor>();
-
-            // Строим конвейеры
-            for (int i = 0; i < pathPoints.Count; i++)
-            {
-                Point point = pathPoints[i];
-
-                // Определяем направление
-                Direction direction;
-                if (i < pathPoints.Count - 1)
-                {
-                    direction = CalculateDirectionBetweenPoints(point, pathPoints[i + 1]);
-                }
-                else if (i > 0)
-                {
-                    direction = CalculateDirectionBetweenPoints(pathPoints[i - 1], point);
-                }
-                else
-                {
-                    direction = Direction.Right; // По умолчанию
-                }
-
-                // Проверяем, можно ли построить здесь
-                if (!IsBuildingPlacementValid(point.X, point.Y, "conveyor", false))
-                    continue; // Пропускаем эту клетку
-
-                // Создаем конвейер
-                Conveyor newConveyor = new Conveyor(point.X, point.Y, direction);
-                newConveyor.Build();
-                newConveyor.AddToCanvas(GameCanvas);
-                conveyors.Add(newConveyor);
-                newConveyors.Add(newConveyor);
-            }
-
-            if (newConveyors.Count == 0) return false;
-
-            // Соединяем конвейеры в цепочку
-            for (int i = 0; i < newConveyors.Count - 1; i++)
-            {
-                newConveyors[i].SetNextConveyor(newConveyors[i + 1]);
-            }
-
-            // Устанавливаем источник и цель
-            newConveyors[0].SourceBuilding = source;
-            newConveyors[newConveyors.Count - 1].TargetBuilding = target;
-
-            return true;
-        }
-
-        private bool TryBuildDirectLine(Conveyor start, Conveyor end, out List<Conveyor> path)
-        {
-            path = new List<Conveyor>();
-
-            // Простой алгоритм: идем по прямой
-            double currentX = start.X;
-            double currentY = start.Y;
-            double targetX = end.X;
-            double targetY = end.Y;
-
-            // Находим все конвейеры по пути
-            while (Math.Abs(currentX - targetX) > GridSize || Math.Abs(currentY - targetY) > GridSize)
-            {
-                // Находим конвейер в текущей позиции
-                Conveyor conveyorAtPos = FindConveyorAtPosition(currentX, currentY);
-                if (conveyorAtPos != null && !path.Contains(conveyorAtPos))
-                {
-                    path.Add(conveyorAtPos);
-                }
-
-                // Двигаемся к цели
-                if (Math.Abs(currentX - targetX) > GridSize)
-                {
-                    currentX += (targetX > currentX) ? GridSize : -GridSize;
-                }
-                else if (Math.Abs(currentY - targetY) > GridSize)
-                {
-                    currentY += (targetY > currentY) ? GridSize : -GridSize;
-                }
-            }
-
-            // Добавляем конечный конвейер
-            if (!path.Contains(end))
-            {
-                path.Add(end);
-            }
-
-            return path.Count > 0;
-        }
-
-        private Conveyor FindConveyorAtPosition(double x, double y)
-        {
-            foreach (var conveyor in conveyors)
-            {
-                if (conveyor.IsBuilt &&
-                    Math.Abs(conveyor.X - x) < 5 &&
-                    Math.Abs(conveyor.Y - y) < 5)
-                {
-                    return conveyor;
-                }
-            }
-            return null;
-        }
-
-        private Conveyor FindNearestConveyorToBuilding(object building)
-        {
-            Point buildingCenter = GetBuildingCenter(building);
-            Conveyor nearest = null;
-            double minDistance = double.MaxValue;
-
-            foreach (var conveyor in conveyors)
-            {
-                if (conveyor.IsBuilt)
-                {
-                    Point conveyorCenter = new Point(conveyor.X + conveyor.Width / 2,
-                                                   conveyor.Y + conveyor.Height / 2);
-                    double distance = Math.Sqrt(
-                        Math.Pow(conveyorCenter.X - buildingCenter.X, 2) +
-                        Math.Pow(conveyorCenter.Y - buildingCenter.Y, 2));
-
-                    // Увеличиваем максимальное расстояние до 250 пикселей
-                    if (distance < minDistance && distance < 250)
-                    {
-                        minDistance = distance;
-                        nearest = conveyor;
-                    }
-                }
-            }
-
-            // Если не нашли, ищем самый ближайший независимо от расстояния
-            if (nearest == null && conveyors.Count > 0)
-            {
-                minDistance = double.MaxValue;
-                foreach (var conveyor in conveyors)
-                {
-                    if (conveyor.IsBuilt)
-                    {
-                        Point conveyorCenter = new Point(conveyor.X + conveyor.Width / 2,
-                                                       conveyor.Y + conveyor.Height / 2);
-                        double distance = Math.Sqrt(
-                            Math.Pow(conveyorCenter.X - buildingCenter.X, 2) +
-                            Math.Pow(conveyorCenter.Y - buildingCenter.Y, 2));
-
-                        if (distance < minDistance)
-                        {
-                            minDistance = distance;
-                            nearest = conveyor;
-                        }
-                    }
-                }
-            }
-
-            return nearest;
-        }
-
         private Point GetBuildingCenter(object building)
         {
             if (building is Miner miner)
-            {
                 return new Point(miner.X + miner.Width / 2, miner.Y + miner.Height / 2);
-            }
             else if (building is Smelter smelter)
-            {
                 return new Point(smelter.X + smelter.Width / 2, smelter.Y + smelter.Height / 2);
-            }
             else if (building is ArmsFactory armsFactory)
-            {
                 return new Point(armsFactory.X + armsFactory.Width / 2, armsFactory.Y + armsFactory.Height / 2);
-            }
             return new Point(0, 0);
         }
 
-        private List<Conveyor> FindPathBetweenConveyors(Conveyor start, Conveyor end)
+        private void ShowConnectionContextMenu(object building, Point position)
         {
-            // Простая реализация: используем поиск в ширину
-            var visited = new HashSet<Conveyor>();
-            var queue = new Queue<List<Conveyor>>();
+            var contextMenu = new ContextMenu();
 
-            queue.Enqueue(new List<Conveyor> { start });
-            visited.Add(start);
-
-            int maxSteps = 50; // Ограничиваем количество шагов
-
-            while (queue.Count > 0 && maxSteps-- > 0)
+            var connectInputItem = new MenuItem
             {
-                var currentPath = queue.Dequeue();
-                var current = currentPath.Last();
+                Header = "Соединить с ВХОДНЫМ конвейером",
+                Tag = new Tuple<object, bool>(building, true)
+            };
+            connectInputItem.Click += ConnectMenuItem_Click;
 
-                if (current == end)
-                {
-                    return currentPath;
-                }
+            var connectOutputItem = new MenuItem
+            {
+                Header = "Соединить с ВЫХОДНЫМ конвейером",
+                Tag = new Tuple<object, bool>(building, false)
+            };
+            connectOutputItem.Click += ConnectMenuItem_Click;
 
-                // Получаем соседей (включая следующий и предыдущий)
-                var neighbors = new List<Conveyor>();
+            contextMenu.Items.Add(connectInputItem);
+            contextMenu.Items.Add(connectOutputItem);
 
-                if (current.NextConveyor != null)
-                    neighbors.Add(current.NextConveyor);
-                if (current.PreviousConveyor != null)
-                    neighbors.Add(current.PreviousConveyor);
-
-                // Также ищем конвейеры рядом по позиции
-                foreach (var conveyor in conveyors)
-                {
-                    if (conveyor != current && conveyor.IsBuilt && !visited.Contains(conveyor))
-                    {
-                        double distance = Math.Sqrt(
-                            Math.Pow(conveyor.X - current.X, 2) +
-                            Math.Pow(conveyor.Y - current.Y, 2));
-
-                        // Если конвейер рядом (в пределах 60 пикселей)
-                        if (distance < 60)
-                        {
-                            neighbors.Add(conveyor);
-                        }
-                    }
-                }
-
-                foreach (var neighbor in neighbors.Distinct())
-                {
-                    if (!visited.Contains(neighbor))
-                    {
-                        visited.Add(neighbor);
-                        var newPath = new List<Conveyor>(currentPath) { neighbor };
-                        queue.Enqueue(newPath);
-                    }
-                }
-            }
-
-            return new List<Conveyor>(); // Путь не найден
+            contextMenu.IsOpen = true;
+            contextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.AbsolutePoint;
+            contextMenu.HorizontalOffset = position.X;
+            contextMenu.VerticalOffset = position.Y;
         }
 
-        private bool AreConveyorsConnected(Conveyor start, Conveyor end, out List<Conveyor> path)
+        private void ConnectMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            path = new List<Conveyor>();
-            var current = start;
-
-            while (current != null)
+            if (sender is MenuItem menuItem && menuItem.Tag is Tuple<object, bool> connectionInfo)
             {
-                path.Add(current);
-                if (current == end) return true;
-                current = current.NextConveyor;
+                var building = connectionInfo.Item1;
+                var isInput = connectionInfo.Item2;
+                StartSelectConveyorForBuilding(building, isInput);
             }
-
-            return false;
-        }
-
-        private List<Conveyor> GetConnectedNeighbors(Conveyor conveyor)
-        {
-            List<Conveyor> neighbors = new List<Conveyor>();
-
-            if (conveyor.NextConveyor != null)
-                neighbors.Add(conveyor.NextConveyor);
-            if (conveyor.PreviousConveyor != null)
-                neighbors.Add(conveyor.PreviousConveyor);
-
-            return neighbors;
         }
 
         private string GetResourceName(ResourceType type)
@@ -2126,7 +1485,6 @@ namespace Factorio
 
         private void CreateTestSetup()
         {
-            // Добавляем ресурсы в инвентарь игрока
             player.AddResource(ResourceType.CopperIngot, 11);
             player.AddResource(ResourceType.IronIngot, 11);
             player.AddResource(ResourceType.Coal, 27);
@@ -2139,11 +1497,8 @@ namespace Factorio
 
         private void EmergencyCleanup()
         {
-            // Удаляем все конвейеры (для отладки)
             foreach (var conveyor in conveyors.ToList())
-            {
                 conveyor.RemoveFromCanvas(GameCanvas);
-            }
             conveyors.Clear();
             ShowMessage("Все конвейеры удалены!");
         }

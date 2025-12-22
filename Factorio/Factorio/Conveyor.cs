@@ -12,51 +12,46 @@ namespace Factorio
     public class Conveyor
     {
         // =========================
-        // PUBLIC API (старый код)
+        // ОСНОВНЫЕ СВОЙСТВА
         // =========================
 
         public Image Sprite { get; private set; }
-
         public double X { get; }
         public double Y { get; }
         public double Width { get; } = 30;
         public double Height { get; } = 30;
-
         public Direction Direction { get; private set; }
-
         public bool IsBuilt { get; private set; }
-        public bool IsActive { get; private set; }
 
-        public Conveyor NextConveyor { get; set; }
-        public Conveyor PreviousConveyor { get; set; }
-
-        // Старые поля — оставлены для совместимости
-        public object SourceBuilding { get; set; }
-        public object TargetBuilding { get; set; }
+        // Связь с зданиями (только для входных/выходных конвейеров)
+        public object LinkedBuilding { get; set; }
+        public bool IsInputConveyor { get; set; }  // Для загрузки в здание
+        public bool IsOutputConveyor { get; set; } // Для выгрузки из здания
 
         // =========================
-        // INTERNAL STATE
+        // СОСТОЯНИЕ ТРАНСПОРТИРОВКИ
         // =========================
 
-        private readonly Queue<ResourceType> buffer = new Queue<ResourceType>();
-        private const int MaxBufferSize = 3;
-
-        private bool isTransporting;
-        private ResourceType currentResource;
-        private double progress;
+        private ResourceType currentResource = ResourceType.None;
+        private double transportProgress = 0;
+        private bool isTransporting = false;
 
         private DispatcherTimer transportTimer;
         private DispatcherTimer animationTimer;
-
         private List<BitmapImage> animationFrames = new List<BitmapImage>();
         private int frameIndex;
 
         private Image resourceSprite;
-
-        private const double TransportSpeed = 0.05;
+        private const double TransportSpeed = 0.03;
 
         // =========================
-        // CONSTRUCTOR
+        // БУФЕР ДЛЯ ПРИЕМА РЕСУРСОВ
+        // =========================
+
+        private ResourceType bufferedResource = ResourceType.None;
+
+        // =========================
+        // КОНСТРУКТОР
         // =========================
 
         public Conveyor(double x, double y, Direction direction)
@@ -65,15 +60,16 @@ namespace Factorio
             Y = y;
             Direction = direction;
 
-            InitSprite();
-            InitAnimation();
+            InitializeSprite();
+            InitializeAnimation();
+            InitializeTransport();
         }
 
         // =========================
-        // INIT
+        // ИНИЦИАЛИЗАЦИЯ
         // =========================
 
-        private void InitSprite()
+        private void InitializeSprite()
         {
             Sprite = new Image
             {
@@ -87,7 +83,7 @@ namespace Factorio
             Canvas.SetTop(Sprite, Y);
         }
 
-        private void InitAnimation()
+        private void InitializeAnimation()
         {
             LoadAnimationFrames();
 
@@ -97,11 +93,13 @@ namespace Factorio
             };
             animationTimer.Tick += (_, __) =>
             {
-                if (!IsActive) return;
                 frameIndex = (frameIndex + 1) % animationFrames.Count;
                 Sprite.Source = animationFrames[frameIndex];
             };
+        }
 
+        private void InitializeTransport()
+        {
             transportTimer = new DispatcherTimer
             {
                 Interval = TimeSpan.FromMilliseconds(50)
@@ -117,373 +115,256 @@ namespace Factorio
         }
 
         // =========================
-        // BUILD / CONNECTION
+        // ОСНОВНАЯ ЛОГИКА
         // =========================
 
         public void Build()
         {
             IsBuilt = true;
-            UpdateActivity();
-        }
-
-        public void SetNextConveyor(Conveyor next)
-        {
-            NextConveyor = next;
-
-            if (next != null && next.PreviousConveyor != this)
-                next.PreviousConveyor = this;
-
-            UpdateActivity();
-            next?.UpdateActivity();
-        }
-
-        private void UpdateActivity()
-        {
-            bool wasActive = IsActive;
-            IsActive = IsBuilt && (PreviousConveyor != null || SourceBuilding != null);
-
-            if (IsActive && !wasActive)
-            {
-                animationTimer.Start();
-                transportTimer.Start();
-            }
-            else if (!IsActive && wasActive)
-            {
-                animationTimer.Stop();
-                transportTimer.Stop();
-                ResetTransport();
-            }
+            animationTimer.Start();
+            transportTimer.Start();
         }
 
         // =========================
-        // TRANSPORT LOGIC
+        // ПРИЕМ И ПЕРЕДАЧА РЕСУРСОВ
         // =========================
 
-        // Вместо текущей логики в UpdateTransport:
+        /// <summary>
+        /// Попытка принять ресурс от предыдущего конвейера
+        /// </summary>
+        public bool TryReceiveResource(ResourceType resource)
+        {
+            // Если уже занят или уже есть буферизированный ресурс
+            if (isTransporting || bufferedResource != ResourceType.None)
+                return false;
+
+            // Сохраняем в буфер для следующего цикла транспортировки
+            bufferedResource = resource;
+            return true;
+        }
+
+        /// <summary>
+        /// Основной цикл транспортировки
+        /// </summary>
         private void UpdateTransport()
         {
-            if (!IsActive) return;
-
-            // Если ресурс едет
+            // Если уже перевозим ресурс - двигаем его
             if (isTransporting)
             {
-                progress += TransportSpeed;
-                UpdateResourcePosition();
-
-                if (progress >= 1.0)
-                    CompleteTransport();
+                MoveResource();
                 return;
             }
 
-            // 1️⃣ Получаем ресурс ТОЛЬКО от предыдущего конвейера (если он есть)
-            if (PreviousConveyor != null && PreviousConveyor.CanGive() && IsPreviousInCorrectDirection())
+            // Если есть ресурс в буфере - начинаем транспортировку
+            if (bufferedResource != ResourceType.None && !isTransporting)
             {
-                buffer.Enqueue(PreviousConveyor.Give());
+                StartTransport(bufferedResource);
+                bufferedResource = ResourceType.None;
                 return;
             }
 
-            // 2️⃣ Получаем ресурс ИЗ ИСТОЧНИКА (если он есть и находится с правильной стороны)
-            if (SourceBuilding != null && IsSourceInInputDirection())
+            // Для выходных конвейеров: пытаемся взять ресурс из здания
+            if (IsOutputConveyor && LinkedBuilding != null && !isTransporting)
             {
-                ResourceType res = TryGetFromSource(SourceBuilding);
-                if (res != ResourceType.None)
+                TryTakeFromBuilding();
+            }
+        }
+
+        private void StartTransport(ResourceType resource)
+        {
+            isTransporting = true;
+            currentResource = resource;
+            transportProgress = 0;
+
+            resourceSprite.Source = LoadResourceIcon(resource);
+            resourceSprite.Visibility = Visibility.Visible;
+            UpdateResourcePosition();
+        }
+
+        private void MoveResource()
+        {
+            transportProgress += TransportSpeed;
+            UpdateResourcePosition();
+
+            if (transportProgress >= 1.0)
+            {
+                CompleteTransport();
+            }
+        }
+
+        private void CompleteTransport()
+        {
+            // Для входных конвейеров: пытаемся отдать в здание
+            if (IsInputConveyor && LinkedBuilding != null)
+            {
+                if (TryDeliverToBuilding(currentResource))
                 {
-                    buffer.Enqueue(res);
+                    ResetTransport();
                     return;
                 }
             }
 
-            // 3️⃣ Или из своего буфера
-            if (buffer.Count > 0)
+            // Ищем следующий конвейер в направлении
+            Conveyor nextConveyor = FindNextConveyorInDirection();
+
+            if (nextConveyor != null)
             {
-                StartTransport(buffer.Dequeue());
-            }
-        }
-
-        // Проверяем, находится ли предыдущий конвейер в правильном направлении
-        private bool IsPreviousInCorrectDirection()
-        {
-            if (PreviousConveyor == null) return false;
-
-            // Проверяем, что предыдущий конвейер "смотрит" на этот
-            return PreviousConveyor.Direction == GetDirectionTo(this);
-        }
-
-        // Получаем направление от данного конвейера к целевому
-        private Direction GetDirectionTo(Conveyor target)
-        {
-            double dx = target.X - this.X;
-            double dy = target.Y - this.Y;
-
-            if (Math.Abs(dx) > Math.Abs(dy))
-                return dx > 0 ? Direction.Right : Direction.Left;
-            else
-                return dy > 0 ? Direction.Down : Direction.Up;
-        }
-
-        // Проверяем, находится ли источник с входной стороны
-        private bool IsSourceInInputDirection()
-        {
-            if (SourceBuilding == null) return false;
-
-            Point sourceCenter = GetBuildingCenter(SourceBuilding);
-            Point conveyorCenter = new Point(X + Width / 2, Y + Height / 2);
-
-            // Проверяем, что источник находится с "обратной" стороны от направления
-            switch (Direction)
-            {
-                case Direction.Right:  // Движение вправо → источник должен быть слева
-                    return sourceCenter.X < conveyorCenter.X;
-                case Direction.Left:   // Движение влево ← источник должен быть справа
-                    return sourceCenter.X > conveyorCenter.X;
-                case Direction.Down:   // Движение вниз ↓ источник должен быть сверху
-                    return sourceCenter.Y < conveyorCenter.Y;
-                case Direction.Up:     // Движение вверх ↑ источник должен быть снизу
-                    return sourceCenter.Y > conveyorCenter.Y;
-                default:
-                    return false;
-            }
-        }
-
-        // Аналогично для цели
-        private bool IsTargetInOutputDirection()
-        {
-            if (TargetBuilding == null) return false;
-
-            Point targetCenter = GetBuildingCenter(TargetBuilding);
-            Point conveyorCenter = new Point(X + Width / 2, Y + Height / 2);
-
-            // Проверяем, что цель находится с "лицевой" стороны от направления
-            switch (Direction)
-            {
-                case Direction.Right:  // Движение вправо → цель должна быть справа
-                    return targetCenter.X > conveyorCenter.X;
-                case Direction.Left:   // Движение влево ← цель должна быть слева
-                    return targetCenter.X < conveyorCenter.X;
-                case Direction.Down:   // Движение вниз ↓ цель должна быть снизу
-                    return targetCenter.Y > conveyorCenter.Y;
-                case Direction.Up:     // Движение вверх ↑ цель должна быть сверху
-                    return targetCenter.Y < conveyorCenter.Y;
-                default:
-                    return false;
-            }
-        }
-
-        // Метод для получения центра здания (нужен для проверок направления)
-        private Point GetBuildingCenter(object building)
-        {
-            if (building is Miner miner)
-            {
-                return new Point(miner.X + miner.Width / 2, miner.Y + miner.Height / 2);
-            }
-            else if (building is Smelter smelter)
-            {
-                return new Point(smelter.X + smelter.Width / 2, smelter.Y + smelter.Height / 2);
-            }
-            else if (building is ArmsFactory armsFactory)
-            {
-                return new Point(armsFactory.X + armsFactory.Width / 2, armsFactory.Y + armsFactory.Height / 2);
+                if (nextConveyor.TryReceiveResource(currentResource))
+                {
+                    ResetTransport();
+                    return;
+                }
+                else
+                {
+                    // Следующий конвейер занят - ждем на месте
+                    transportProgress = 0.99;
+                    return;
+                }
             }
 
-            return new Point(0, 0);
-        }
-
-        // В CompleteTransport проверяем направление цели
-        private void CompleteTransport()
-        {
-            // 1️⃣ Передаём дальше по ленте (если следующий конвейер в правильном направлении)
-            if (NextConveyor != null && IsNextInCorrectDirection() && NextConveyor.Receive(currentResource))
-            {
-                ResetTransport();
-                return;
-            }
-
-            // 2️⃣ Пытаемся отдать в здание (если оно в правильном направлении)
-            if (TargetBuilding != null && IsTargetInOutputDirection() &&
-                TryDeliverToTarget(TargetBuilding, currentResource))
-            {
-                ResetTransport();
-                return;
-            }
-
-            // 3️⃣ Возвращаем в буфер (если не смогли передать дальше)
-            if (buffer.Count < MaxBufferSize)
-                buffer.Enqueue(currentResource);
-
+            // Если нет следующего конвейера и это не входной - сбрасываем
             ResetTransport();
         }
-
-        // Проверяем, находится ли следующий конвейер в правильном направлении
-        private bool IsNextInCorrectDirection()
-        {
-            if (NextConveyor == null) return false;
-
-            // Проверяем, что этот конвейер "смотрит" на следующий
-            return this.Direction == GetDirectionTo(NextConveyor);
-        }
-
-        private ResourceType TryGetFromSource(object source)
-        {
-            // ДОБЫТЧИК
-            if (source is Miner miner)
-            {
-                if (miner.OutputSlot.Type != ResourceType.None &&
-                    miner.OutputSlot.Count > 0)
-                {
-                    miner.OutputSlot.Count--;
-                    var type = miner.OutputSlot.Type;
-                    if (miner.OutputSlot.Count == 0)
-                        miner.OutputSlot.Type = ResourceType.None;
-
-                    return type;
-                }
-            }
-
-            // ПЛАВИЛЬНЯ (выход)
-            if (source is Smelter smelter)
-            {
-                if (smelter.OutputSlot.Type != ResourceType.None &&
-                    smelter.OutputSlot.Count > 0)
-                {
-                    smelter.OutputSlot.Count--;
-                    var type = smelter.OutputSlot.Type;
-                    if (smelter.OutputSlot.Count == 0)
-                        smelter.OutputSlot.Type = ResourceType.None;
-
-                    return type;
-                }
-            }
-
-            // ОРУЖЕЙНЫЙ ЗАВОД (выход) - ДОБАВИТЬ
-            if (source is ArmsFactory armsFactory)
-            {
-                if (armsFactory.OutputSlot.Type != ResourceType.None &&
-                    armsFactory.OutputSlot.Count > 0)
-                {
-                    armsFactory.OutputSlot.Count--;
-                    var type = armsFactory.OutputSlot.Type;
-                    if (armsFactory.OutputSlot.Count == 0)
-                        armsFactory.OutputSlot.Type = ResourceType.None;
-
-                    return type;
-                }
-            }
-
-            return ResourceType.None;
-        }
-
-
-
-        private void StartTransport(ResourceType res)
-        {
-            isTransporting = true;
-            currentResource = res;
-            progress = 0;
-
-            resourceSprite.Source = LoadResourceIcon(res);
-            resourceSprite.Visibility = Visibility.Visible;
-
-            UpdateResourcePosition();
-        }
-
 
         private void ResetTransport()
         {
             isTransporting = false;
             currentResource = ResourceType.None;
-            progress = 0;
+            transportProgress = 0;
             resourceSprite.Visibility = Visibility.Collapsed;
         }
 
         // =========================
-        // BUFFER API
+        // РАБОТА С ЗДАНИЯМИ
         // =========================
 
-        public bool CanGive() => buffer.Count > 0 && !isTransporting;
-
-        public ResourceType Give()
+        private void TryTakeFromBuilding()
         {
-            return buffer.Count > 0 ? buffer.Dequeue() : ResourceType.None;
-        }
-
-        public bool Receive(ResourceType res)
-        {
-            if (buffer.Count >= MaxBufferSize) return false;
-            buffer.Enqueue(res);
-            return true;
-        }
-
-        // =========================
-        // DELIVERY
-        // =========================
-
-        private bool TryDeliverToTarget(object target, ResourceType res)
-        {
-            if (target is Smelter smelter)
+            if (LinkedBuilding is Miner miner && miner.OutputSlot.Count > 0)
             {
-                if (res == ResourceType.Coal &&
-                    (smelter.FuelSlot.Type == ResourceType.None || smelter.FuelSlot.Type == ResourceType.Coal))
-                {
-                    smelter.FuelSlot.Type = ResourceType.Coal;
-                    smelter.FuelSlot.Count++;
-                    return true;
-                }
+                var resource = miner.OutputSlot.Type;
+                miner.OutputSlot.Count--;
+                if (miner.OutputSlot.Count == 0)
+                    miner.OutputSlot.Type = ResourceType.None;
 
-                if ((res == ResourceType.Iron || res == ResourceType.Copper) &&
-                    (smelter.InputSlot.Type == ResourceType.None || smelter.InputSlot.Type == res))
+                StartTransport(resource);
+            }
+            else if (LinkedBuilding is Smelter smelter && smelter.OutputSlot.Count > 0)
+            {
+                var resource = smelter.OutputSlot.Type;
+                smelter.OutputSlot.Count--;
+                if (smelter.OutputSlot.Count == 0)
+                    smelter.OutputSlot.Type = ResourceType.None;
+
+                StartTransport(resource);
+            }
+            else if (LinkedBuilding is ArmsFactory armsFactory && armsFactory.OutputSlot.Count > 0)
+            {
+                var resource = armsFactory.OutputSlot.Type;
+                armsFactory.OutputSlot.Count--;
+                if (armsFactory.OutputSlot.Count == 0)
+                    armsFactory.OutputSlot.Type = ResourceType.None;
+
+                StartTransport(resource);
+            }
+        }
+
+        private bool TryDeliverToBuilding(ResourceType resource)
+        {
+            if (LinkedBuilding is Smelter smelter)
+            {
+                if (resource == ResourceType.Coal)
                 {
-                    smelter.InputSlot.Type = res;
-                    smelter.InputSlot.Count++;
-                    return true;
+                    if (smelter.FuelSlot.Type == ResourceType.None ||
+                        smelter.FuelSlot.Type == ResourceType.Coal)
+                    {
+                        smelter.FuelSlot.Type = ResourceType.Coal;
+                        smelter.FuelSlot.Count++;
+                        return true;
+                    }
+                }
+                else if (resource == ResourceType.Iron || resource == ResourceType.Copper)
+                {
+                    if (smelter.InputSlot.Type == ResourceType.None ||
+                        smelter.InputSlot.Type == resource)
+                    {
+                        smelter.InputSlot.Type = resource;
+                        smelter.InputSlot.Count++;
+                        return true;
+                    }
                 }
             }
-            else if (target is ArmsFactory armsFactory)  // ДОБАВИТЬ ЭТО
+            else if (LinkedBuilding is ArmsFactory armsFactory)
             {
-                // Уголь в топливный слот
-                if (res == ResourceType.Coal &&
-                    (armsFactory.FuelSlot.Type == ResourceType.None || armsFactory.FuelSlot.Type == ResourceType.Coal))
+                if (resource == ResourceType.Coal)
                 {
-                    armsFactory.FuelSlot.Type = ResourceType.Coal;
-                    armsFactory.FuelSlot.Count++;
-                    return true;
+                    if (armsFactory.FuelSlot.Type == ResourceType.None ||
+                        armsFactory.FuelSlot.Type == ResourceType.Coal)
+                    {
+                        armsFactory.FuelSlot.Type = ResourceType.Coal;
+                        armsFactory.FuelSlot.Count++;
+                        return true;
+                    }
                 }
-
-                // Железные или медные слитки в входной слот
-                if ((res == ResourceType.IronIngot || res == ResourceType.CopperIngot) &&
-                    (armsFactory.InputSlot.Type == ResourceType.None || armsFactory.InputSlot.Type == res))
+                else if (resource == ResourceType.IronIngot || resource == ResourceType.CopperIngot)
                 {
-                    armsFactory.InputSlot.Type = res;
-                    armsFactory.InputSlot.Count++;
-                    return true;
+                    if (armsFactory.InputSlot.Type == ResourceType.None ||
+                        armsFactory.InputSlot.Type == resource)
+                    {
+                        armsFactory.InputSlot.Type = resource;
+                        armsFactory.InputSlot.Count++;
+                        return true;
+                    }
                 }
             }
 
             return false;
         }
 
-
         // =========================
-        // REQUIRED BY MainWindow
+        // ПОИСК СОСЕДНИХ КОНВЕЙЕРОВ
         // =========================
 
-        public void RemoveFromCanvas(Canvas canvas)
+        private Conveyor FindNextConveyorInDirection()
         {
-            canvas.Children.Remove(Sprite);
-            canvas.Children.Remove(resourceSprite);
+            // Определяем позицию следующей клетки по направлению
+            double nextX = X;
+            double nextY = Y;
+
+            switch (Direction)
+            {
+                case Direction.Right: nextX += Width; break;
+                case Direction.Left: nextX -= Width; break;
+                case Direction.Down: nextY += Height; break;
+                case Direction.Up: nextY -= Height; break;
+            }
+
+            // Ищем конвейер в этой позиции
+            return GameCanvasHelper.FindConveyorAtPosition(nextX, nextY);
         }
 
-        public List<Conveyor> GetAdjacentConveyors()
+        public List<Conveyor> GetAdjacentConveyors(List<Conveyor> allConveyors)
         {
-            return new List<Conveyor>();
-        }
+            List<Conveyor> result = new List<Conveyor>();
 
-        public bool IsNextDirection(Direction dir)
-        {
-            return Direction == dir;
+            foreach (var conveyor in allConveyors)
+            {
+                if (conveyor == this) continue;
+
+                double dx = Math.Abs(X - conveyor.X);
+                double dy = Math.Abs(Y - conveyor.Y);
+
+                if ((dx == Width && dy == 0) || (dy == Height && dx == 0))
+                {
+                    result.Add(conveyor);
+                }
+            }
+
+            return result;
         }
 
         // =========================
-        // VISUALS
+        // ОТОБРАЖЕНИЕ
         // =========================
 
         private void UpdateResourcePosition()
@@ -494,20 +375,20 @@ namespace Factorio
             switch (Direction)
             {
                 case Direction.Right:
-                    px += Width * progress;
+                    px += Width * transportProgress;
                     py += Height / 2 - 10;
                     break;
                 case Direction.Left:
-                    px += Width - Width * progress;
+                    px += Width - Width * transportProgress;
                     py += Height / 2 - 10;
                     break;
                 case Direction.Down:
                     px += Width / 2 - 10;
-                    py += Height * progress;
+                    py += Height * transportProgress;
                     break;
                 case Direction.Up:
                     px += Width / 2 - 10;
-                    py += Height - Height * progress;
+                    py += Height - Height * transportProgress;
                     break;
             }
 
@@ -523,18 +404,20 @@ namespace Factorio
             Canvas.SetZIndex(resourceSprite, 31);
         }
 
+        public void RemoveFromCanvas(Canvas canvas)
+        {
+            canvas.Children.Remove(Sprite);
+            canvas.Children.Remove(resourceSprite);
+        }
+
         // =========================
-        // ASSETS
+        // ЗАГРУЗКА ТЕКСТУР
         // =========================
 
         private BitmapImage LoadConveyorTexture(int frame)
         {
-            string path =
-                $@"C:\Users\Михаил\Desktop\Game\Factorio\Factorio\textures\conveyor\{Direction.ToString().ToLower()}_{frame + 1}.png";
-
-            return File.Exists(path)
-                ? new BitmapImage(new Uri(path))
-                : new BitmapImage();
+            string path = $@"C:\Users\Михаил\Desktop\Game\Factorio\Factorio\textures\conveyor\{Direction.ToString().ToLower()}_{frame + 1}.png";
+            return File.Exists(path) ? new BitmapImage(new Uri(path)) : new BitmapImage();
         }
 
         private void LoadAnimationFrames()
@@ -544,59 +427,52 @@ namespace Factorio
             animationFrames.Add(LoadConveyorTexture(1));
         }
 
+        private BitmapImage LoadResourceIcon(ResourceType type)
+        {
+            string path = $@"C:\Users\Михаил\Desktop\Game\Factorio\Factorio\textures\Resources\{type.ToString().ToLower()}.png";
+            return File.Exists(path) ? new BitmapImage(new Uri(path)) : new BitmapImage();
+        }
+
+        // =========================
+        // ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ (для MainWindow)
+        // =========================
+
+        public bool IsPointInside(Point point)
+        {
+            return point.X >= X && point.X <= X + Width &&
+                   point.Y >= Y && point.Y <= Y + Height;
+        }
+
         public bool IsNextInDirection(Conveyor other)
         {
-            // other должен быть ровно в направлении, куда "смотрит" этот конвейер
-
             switch (Direction)
             {
-                case Direction.Right:
-                    return other.X == X + Width && other.Y == Y;
-
-                case Direction.Left:
-                    return other.X == X - Width && other.Y == Y;
-
-                case Direction.Down:
-                    return other.Y == Y + Height && other.X == X;
-
-                case Direction.Up:
-                    return other.Y == Y - Height && other.X == X;
-
-                default:
-                    return false;
+                case Direction.Right: return other.X == X + Width && other.Y == Y;
+                case Direction.Left: return other.X == X - Width && other.Y == Y;
+                case Direction.Down: return other.Y == Y + Height && other.X == X;
+                case Direction.Up: return other.Y == Y - Height && other.X == X;
+                default: return false;
             }
         }
+    }
 
-        public List<Conveyor> GetAdjacentConveyors(List<Conveyor> allConveyors)
+    // Вспомогательный класс для поиска конвейеров
+    public static class GameCanvasHelper
+    {
+        public static List<Conveyor> AllConveyors { get; set; } = new List<Conveyor>();
+
+        public static Conveyor FindConveyorAtPosition(double x, double y)
         {
-            List<Conveyor> result = new List<Conveyor>();
-
-            foreach (var c in allConveyors)
+            foreach (var conveyor in AllConveyors)
             {
-                if (c == this) continue;
-
-                double dx = Math.Abs(X - c.X);
-                double dy = Math.Abs(Y - c.Y);
-
-                // строго соседние клетки
-                if ((dx == Width && dy == 0) || (dy == Height && dx == 0))
+                if (conveyor.IsBuilt &&
+                    Math.Abs(conveyor.X - x) < 5 &&
+                    Math.Abs(conveyor.Y - y) < 5)
                 {
-                    result.Add(c);
+                    return conveyor;
                 }
             }
-
-            return result;
-        }
-
-
-        private BitmapImage LoadResourceIcon(ResourceType t)
-        {
-            string path =
-                $@"C:\Users\Михаил\Desktop\Game\Factorio\Factorio\textures\Resources\{t.ToString().ToLower()}.png";
-
-            return File.Exists(path)
-                ? new BitmapImage(new Uri(path))
-                : new BitmapImage();
+            return null;
         }
     }
 }
