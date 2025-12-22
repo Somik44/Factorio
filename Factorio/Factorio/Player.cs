@@ -38,6 +38,11 @@ namespace Factorio
         private bool isMining = false;
         private List<Smelter> smelters = new List<Smelter>();
 
+        //для урона
+        public int Health { get; private set; }
+        public int MaxHealth { get; private set; }
+        public bool IsDead => Health <= 0;
+
         public Player(double startX, double startY, double width, double height)
         {
             X = startX;
@@ -48,39 +53,38 @@ namespace Factorio
             CurrentDirection = Direction.Down;
             lastFrameTime = DateTime.Now;
 
+            MaxHealth = 4;
+            Health = MaxHealth;
+
             InitializeInventory();
             InitializeSprite();
             LoadAnimations();
         }
 
-        // Добавляем метод для установки списка плавилен
         public void SetSmelters(List<Smelter> smeltersList)
         {
             smelters = smeltersList;
         }
 
-        // Добавляем метод проверки столкновения с плавильнями
-        private bool CheckCollisionWithSmelters(double newX, double newY)
+
+        public void TakeDamage(int damage)
         {
-            if (smelters == null) return false;
+            if (IsDead) return;
 
-            foreach (var smelter in smelters)
+            Health -= damage;
+            Health = Math.Max(0, Health);
+
+            if (IsDead)
             {
-                if (smelter.IsBuilt)
-                {
-                    // Проверяем пересечение прямоугольников (игрока и плавильни)
-                    bool collision = newX < smelter.X + smelter.Width &&
-                                     newX + Width > smelter.X &&
-                                     newY < smelter.Y + smelter.Height &&
-                                     newY + Height > smelter.Y;
-
-                    if (collision)
-                    {
-                        return true; // Есть столкновение
-                    }
-                }
+                Die();
             }
-            return false; // Нет столкновений
+        }
+
+        private void Die()
+        {
+            Stop();
+            Sprite.Opacity = 0.5;
+            Console.WriteLine("Игрок умер!");
         }
 
         private void InitializeInventory()

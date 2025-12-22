@@ -65,7 +65,6 @@ namespace Factorio
         {
             InitializeComponent();
 
-            // Добавляем обработчик клика по канвасу
             GameCanvas.MouseDown += GameCanvas_MouseDown;
             GameCanvas.MouseMove += GameCanvas_MouseMove;
         }
@@ -98,11 +97,9 @@ namespace Factorio
 
         private Point GetBuildingCenterOffset(string buildingType)
         {
-            // Для конвейера не центрируем, потому что он занимает ровно одну клетку
             if (buildingType == "conveyor")
                 return new Point(0, 0);
 
-            // Возвращаем половину размера для центрирования курсора
             var size = GetBuildingSize(buildingType);
             return new Point(size.Width / 2, size.Height / 2);
         }
@@ -166,10 +163,8 @@ namespace Factorio
 
         private bool IsConveyorPlacementValid(double x, double y)
         {
-            // Для конвейера проверяем, чтобы центр не совпадал с центрами других зданий/конвейеров
-            Point conveyorCenter = new Point(x + 15, y + 15); // 30/2 = 15
+            Point conveyorCenter = new Point(x + 15, y + 15);
 
-            // Проверяем конвейеры
             foreach (var conveyor in conveyors)
             {
                 if (conveyor.IsBuilt)
@@ -180,18 +175,15 @@ namespace Factorio
                 }
             }
 
-            // Проверяем плавильни
             foreach (var smelter in smelters)
             {
                 if (smelter.IsBuilt)
                 {
-                    // Конвейер может касаться плавильни, но не перекрывать её существенную часть
                     if (IsPointTooCloseToRect(conveyorCenter, smelter.X, smelter.Y, smelter.Width, smelter.Height, 5))
                         return false;
                 }
             }
 
-            // Проверяем добытчики
             foreach (var miner in miners)
             {
                 if (miner.IsBuilt)
@@ -201,7 +193,6 @@ namespace Factorio
                 }
             }
 
-            // Проверяем оружейные заводы
             foreach (var armsFactory in armsFactories)
             {
                 if (armsFactory.IsBuilt)
@@ -216,7 +207,6 @@ namespace Factorio
 
         private bool IsRegularBuildingPlacementValid(Rect newBuildingRect, string buildingType)
         {
-            // Проверяем плавильни
             foreach (var smelter in smelters)
             {
                 if (smelter.IsBuilt)
@@ -227,7 +217,6 @@ namespace Factorio
                 }
             }
 
-            // Проверяем добытчики
             foreach (var miner in miners)
             {
                 if (miner.IsBuilt)
@@ -238,7 +227,6 @@ namespace Factorio
                 }
             }
 
-            // Проверяем конвейеры (для обычных зданий проверяем с отступом)
             foreach (var conveyor in conveyors)
             {
                 if (conveyor.IsBuilt)
@@ -249,7 +237,6 @@ namespace Factorio
                 }
             }
 
-            // Проверяем оружейные заводы
             foreach (var armsFactory in armsFactories)
             {
                 if (armsFactory.IsBuilt)
@@ -260,7 +247,6 @@ namespace Factorio
                 }
             }
 
-            // Проверяем ресурсы (для добытчика это нужно, для других - нет)
             if (buildingType != "miner")
             {
                 foreach (var resource in resources)
@@ -281,11 +267,9 @@ namespace Factorio
 
         private bool IsPointTooCloseToRect(Point point, double rectX, double rectY, double rectWidth, double rectHeight, double margin = 0)
         {
-            // Проверяем, находится ли точка слишком близко к прямоугольнику
             double centerX = rectX + rectWidth / 2;
             double centerY = rectY + rectHeight / 2;
 
-            // Если точка находится внутри прямоугольника (с учетом отступа)
             if (point.X >= rectX - margin && point.X <= rectX + rectWidth + margin &&
                 point.Y >= rectY - margin && point.Y <= rectY + rectHeight + margin)
             {
@@ -297,33 +281,14 @@ namespace Factorio
 
         private bool RectanglesIntersectWithMargin(Rect rect1, Rect rect2, double margin = 0)
         {
-            // Проверяем пересечение с учетом отступа
             Rect expandedRect1 = new Rect(rect1.X - margin, rect1.Y - margin, rect1.Width + 2 * margin, rect1.Height + 2 * margin);
             Rect expandedRect2 = new Rect(rect2.X - margin, rect2.Y - margin, rect2.Width + 2 * margin, rect2.Height + 2 * margin);
 
             return expandedRect1.IntersectsWith(expandedRect2);
         }
 
-
-        // Новая функция для проверки пересечения без отступов
-        private bool RectanglesOverlap(Rect rect1, Rect rect2)
-        {
-            return rect1.IntersectsWith(rect2);
-        }
-
-        // Функция для проверки пересечения (более строгая, чем касание)
-        private bool RectanglesIntersect(Rect rect1, Rect rect2)
-        {
-            // Разрешаем касание (когда границы совпадают), но запрещаем пересечение
-            return rect1.X < rect2.X + rect2.Width &&
-                   rect1.X + rect1.Width > rect2.X &&
-                   rect1.Y < rect2.Y + rect2.Height &&
-                   rect1.Y + rect1.Height > rect2.Y;
-        }
-
         private bool RectanglesOverlapWithMargin(Rect rect1, Rect rect2)
         {
-            // Для конвейеров (30x30) разрешаем касание
             if (rect1.Width == 30 && rect1.Height == 30 && rect2.Width == 30 && rect2.Height == 30)
             {
                 // Конвейеры могут касаться, но не пересекаться
@@ -334,16 +299,44 @@ namespace Factorio
                          rect1.Y >= rect2.Y + rect2.Height);  // сверху
             }
 
-            // Для других зданий добавляем отступ 5 пикселей
             Rect expandedRect1 = new Rect(rect1.X - 5, rect1.Y - 5, rect1.Width + 10, rect1.Height + 10);
             Rect expandedRect2 = new Rect(rect2.X - 5, rect2.Y - 5, rect2.Width + 10, rect2.Height + 10);
 
             return expandedRect1.IntersectsWith(expandedRect2);
         }
 
+        private void UpdatePlayerHealth()
+        {
+            if (player == null) return;
+
+            HealthBar.Value = player.Health;
+            HealthBar.Maximum = player.MaxHealth;
+            HealthText.Text = $"{player.Health}/{player.MaxHealth}";
+
+            if (player.Health <= 1)
+            {
+                HealthBar.Foreground = Brushes.Red;
+            }
+            else if (player.Health <= 2)
+            {
+                HealthBar.Foreground = Brushes.Yellow;
+            }
+            else
+            {
+                HealthBar.Foreground = Brushes.LimeGreen;
+            }
+
+            if (player.IsDead)
+            {
+                gameLoopTimer.Stop();
+                MessageBox.Show("Игрок умер! Игра окончена.", "Game Over",
+                               MessageBoxButton.OK, MessageBoxImage.Information);
+                this.Close();
+            }
+        }
+
         private void ShowGrid()
         {
-            // Очищаем предыдущую сетку
             var gridElements = GameCanvas.Children.OfType<Rectangle>().Where(r => r.Name == "GridLine").ToList();
             foreach (var element in gridElements)
             {
@@ -352,7 +345,6 @@ namespace Factorio
 
             if (!isGridVisible) return;
 
-            // Создаем новую сетку
             for (int x = 0; x < this.ActualWidth; x += GridSize)
             {
                 var verticalLine = new Rectangle
@@ -432,7 +424,6 @@ namespace Factorio
             player.UpdateAnimation();
             player.UpdateMining(resources, isMiningPressed);
 
-            // Обновляем всех добытчиков
             foreach (var miner in miners)
             {
                 if (miner.IsBuilt)
@@ -441,8 +432,9 @@ namespace Factorio
                 }
             }
 
-            // Обновляем жуков
             UpdateInsects();
+
+            UpdatePlayerHealth();
         }
 
         private void UpdateInsects()

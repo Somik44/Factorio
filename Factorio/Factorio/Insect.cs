@@ -27,6 +27,7 @@ namespace Factorio
         private int damageToPlayer = 0;
         private const int PlayerMaxHealth = 4;
         private Random random = new Random();
+        private DateTime lastDamageTime = DateTime.MinValue;
 
         public Insect(double x, double y, Player targetPlayer)
         {
@@ -58,13 +59,11 @@ namespace Factorio
 
         private void InitializeTimers()
         {
-            // Таймер для движения
             moveTimer = new DispatcherTimer();
             moveTimer.Interval = TimeSpan.FromMilliseconds(50);
             moveTimer.Tick += (s, e) => Move();
             moveTimer.Start();
 
-            // Таймер для анимации
             animationTimer = new DispatcherTimer();
             animationTimer.Interval = TimeSpan.FromMilliseconds(200);
             animationTimer.Tick += (s, e) => UpdateAnimation();
@@ -75,7 +74,6 @@ namespace Factorio
         {
             if (IsDead || TargetPlayer == null) return;
 
-            // Вычисляем направление к игроку
             double playerCenterX = TargetPlayer.X + TargetPlayer.Width / 2;
             double playerCenterY = TargetPlayer.Y + TargetPlayer.Height / 2;
             double insectCenterX = X + Width / 2;
@@ -84,7 +82,6 @@ namespace Factorio
             double deltaX = playerCenterX - insectCenterX;
             double deltaY = playerCenterY - insectCenterY;
 
-            // Нормализуем вектор
             double length = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
             if (length > 0)
             {
@@ -92,39 +89,30 @@ namespace Factorio
                 deltaY /= length;
             }
 
-            // Обновляем направление анимации
             movingRight = deltaX > 0;
 
-            // Двигаемся к игроку
             X += deltaX * Speed;
             Y += deltaY * Speed;
 
             UpdatePosition();
 
-            // Проверяем столкновение с игроком
             CheckCollisionWithPlayer();
         }
-
         private void CheckCollisionWithPlayer()
         {
             if (IsDead || TargetPlayer == null) return;
 
-            // Простая проверка столкновения (пересечение прямоугольников)
             Rect insectRect = new Rect(X, Y, Width, Height);
             Rect playerRect = new Rect(TargetPlayer.X, TargetPlayer.Y, TargetPlayer.Width, TargetPlayer.Height);
 
             if (insectRect.IntersectsWith(playerRect))
             {
-                // Наносим урон игроку
-                damageToPlayer++;
-                // Здесь можно добавить визуальную индикацию урона
-
-                // Проверяем, умер ли игрок
-                if (damageToPlayer >= PlayerMaxHealth)
+                // Наносим урон игроку с задержкой (чтобы не убить мгновенно)
+                if ((DateTime.Now - lastDamageTime).TotalSeconds >= 1.0)
                 {
-                    // Игрок умер - можно добавить обработку
-                    // Например, показать сообщение или перезапустить игру
-                    Console.WriteLine("Игрок убит жуком!");
+                    TargetPlayer.TakeDamage(1);
+                    lastDamageTime = DateTime.Now;
+                    Console.WriteLine($"Игрок получил урон! Здоровье: {TargetPlayer.Health}/{TargetPlayer.MaxHealth}");
                 }
             }
         }
