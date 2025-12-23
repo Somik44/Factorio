@@ -11,10 +11,6 @@ namespace Factorio
 {
     public class Conveyor
     {
-        // =========================
-        // ОСНОВНЫЕ СВОЙСТВА
-        // =========================
-
         public Image Sprite { get; private set; }
         public double X { get; }
         public double Y { get; }
@@ -23,14 +19,10 @@ namespace Factorio
         public Direction Direction { get; private set; }
         public bool IsBuilt { get; private set; }
 
-        // Связь с зданиями (только для входных/выходных конвейеров)
-        public object LinkedBuilding { get; set; }
-        public bool IsInputConveyor { get; set; }  // Для загрузки в здание
-        public bool IsOutputConveyor { get; set; } // Для выгрузки из здания
 
-        // =========================
-        // СОСТОЯНИЕ ТРАНСПОРТИРОВКИ
-        // =========================
+        public object LinkedBuilding { get; set; }
+        public bool IsInputConveyor { get; set; } 
+        public bool IsOutputConveyor { get; set; }
 
         private ResourceType currentResource = ResourceType.None;
         private double transportProgress = 0;
@@ -44,15 +36,9 @@ namespace Factorio
         private Image resourceSprite;
         private const double TransportSpeed = 0.03;
 
-        // =========================
-        // БУФЕР ДЛЯ ПРИЕМА РЕСУРСОВ
-        // =========================
-
         private ResourceType bufferedResource = ResourceType.None;
 
-        // =========================
-        // КОНСТРУКТОР
-        // =========================
+        //Инициализация
 
         public Conveyor(double x, double y, Direction direction)
         {
@@ -64,10 +50,6 @@ namespace Factorio
             InitializeAnimation();
             InitializeTransport();
         }
-
-        // =========================
-        // ИНИЦИАЛИЗАЦИЯ
-        // =========================
 
         private void InitializeSprite()
         {
@@ -102,7 +84,7 @@ namespace Factorio
         {
             transportTimer = new DispatcherTimer
             {
-                Interval = TimeSpan.FromMilliseconds(50)
+                Interval = TimeSpan.FromMilliseconds(100)
             };
             transportTimer.Tick += (_, __) => UpdateTransport();
 
@@ -114,10 +96,8 @@ namespace Factorio
             };
         }
 
-        // =========================
-        // ОСНОВНАЯ ЛОГИКА
-        // =========================
-
+        
+        //Главная логика
         public void Build()
         {
             IsBuilt = true;
@@ -125,45 +105,29 @@ namespace Factorio
             transportTimer.Start();
         }
 
-        // =========================
-        // ПРИЕМ И ПЕРЕДАЧА РЕСУРСОВ
-        // =========================
-
-        /// <summary>
-        /// Попытка принять ресурс от предыдущего конвейера
-        /// </summary>
         public bool TryReceiveResource(ResourceType resource)
         {
-            // Если уже занят или уже есть буферизированный ресурс
             if (isTransporting || bufferedResource != ResourceType.None)
                 return false;
 
-            // Сохраняем в буфер для следующего цикла транспортировки
             bufferedResource = resource;
             return true;
         }
 
-        /// <summary>
-        /// Основной цикл транспортировки
-        /// </summary>
         private void UpdateTransport()
         {
-            // Если уже перевозим ресурс - двигаем его
             if (isTransporting)
             {
                 MoveResource();
                 return;
             }
 
-            // Если есть ресурс в буфере - начинаем транспортировку
             if (bufferedResource != ResourceType.None && !isTransporting)
             {
                 StartTransport(bufferedResource);
                 bufferedResource = ResourceType.None;
                 return;
             }
-
-            // Для выходных конвейеров: пытаемся взять ресурс из здания
             if (IsOutputConveyor && LinkedBuilding != null && !isTransporting)
             {
                 TryTakeFromBuilding();
@@ -194,7 +158,6 @@ namespace Factorio
 
         private void CompleteTransport()
         {
-            // Для входных конвейеров: пытаемся отдать в здание
             if (IsInputConveyor && LinkedBuilding != null)
             {
                 if (TryDeliverToBuilding(currentResource))
@@ -203,8 +166,6 @@ namespace Factorio
                     return;
                 }
             }
-
-            // Ищем следующий конвейер в направлении
             Conveyor nextConveyor = FindNextConveyorInDirection();
 
             if (nextConveyor != null)
@@ -216,13 +177,10 @@ namespace Factorio
                 }
                 else
                 {
-                    // Следующий конвейер занят - ждем на месте
                     transportProgress = 0.99;
                     return;
                 }
             }
-
-            // Если нет следующего конвейера и это не входной - сбрасываем
             ResetTransport();
         }
 
@@ -234,10 +192,8 @@ namespace Factorio
             resourceSprite.Visibility = Visibility.Collapsed;
         }
 
-        // =========================
-        // РАБОТА С ЗДАНИЯМИ
-        // =========================
 
+        //Для зданий
         private void TryTakeFromBuilding()
         {
             if (LinkedBuilding is Miner miner && miner.OutputSlot.Count > 0)
@@ -321,13 +277,10 @@ namespace Factorio
             return false;
         }
 
-        // =========================
-        // ПОИСК СОСЕДНИХ КОНВЕЙЕРОВ
-        // =========================
 
+        //C другими конв
         private Conveyor FindNextConveyorInDirection()
         {
-            // Определяем позицию следующей клетки по направлению
             double nextX = X;
             double nextY = Y;
 
@@ -339,7 +292,6 @@ namespace Factorio
                 case Direction.Up: nextY -= Height; break;
             }
 
-            // Ищем конвейер в этой позиции
             return GameCanvasHelper.FindConveyorAtPosition(nextX, nextY);
         }
 
@@ -363,10 +315,9 @@ namespace Factorio
             return result;
         }
 
-        // =========================
-        // ОТОБРАЖЕНИЕ
-        // =========================
 
+
+        //Визуал
         private void UpdateResourcePosition()
         {
             double px = X;
@@ -410,10 +361,6 @@ namespace Factorio
             canvas.Children.Remove(resourceSprite);
         }
 
-        // =========================
-        // ЗАГРУЗКА ТЕКСТУР
-        // =========================
-
         private BitmapImage LoadConveyorTexture(int frame)
         {
             string path = $@"C:\Users\Михаил\Desktop\Game\Factorio\Factorio\textures\conveyor\{Direction.ToString().ToLower()}_{frame + 1}.png";
@@ -429,14 +376,19 @@ namespace Factorio
 
         private BitmapImage LoadResourceIcon(ResourceType type)
         {
-            string path = $@"C:\Users\Михаил\Desktop\Game\Factorio\Factorio\textures\Resources\{type.ToString().ToLower()}.png";
+            string fileName = type.ToString().ToLower();
+
+            if (type == ResourceType.IronIngot)
+                fileName = "iron_ingot";
+            else if (type == ResourceType.CopperIngot)
+                fileName = "copper_ingot";
+
+            string path = $@"C:\Users\Михаил\Desktop\Game\Factorio\Factorio\textures\Resources\{fileName}.png";
             return File.Exists(path) ? new BitmapImage(new Uri(path)) : new BitmapImage();
         }
 
-        // =========================
-        // ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ (для MainWindow)
-        // =========================
 
+        //для Main
         public bool IsPointInside(Point point)
         {
             return point.X >= X && point.X <= X + Width &&
@@ -456,7 +408,7 @@ namespace Factorio
         }
     }
 
-    // Вспомогательный класс для поиска конвейеров
+
     public static class GameCanvasHelper
     {
         public static List<Conveyor> AllConveyors { get; set; } = new List<Conveyor>();

@@ -53,7 +53,7 @@ namespace Factorio
             CurrentDirection = Direction.Down;
             lastFrameTime = DateTime.Now;
 
-            MaxHealth = 4;
+            MaxHealth = 6;
             Health = MaxHealth;
 
             InitializeInventory();
@@ -84,7 +84,6 @@ namespace Factorio
         {
             Stop();
             Sprite.Opacity = 0.5;
-            Console.WriteLine("Игрок умер!");
         }
 
         private void InitializeInventory()
@@ -229,28 +228,7 @@ namespace Factorio
             return stoneRemoved && ironRemoved && copperRemoved;
         }
 
-        // Обновим метод для проверки столкновений с добытчиками
-        private bool CheckCollisionWithMiners(double newX, double newY, List<Miner> miners)
-        {
-            if (miners == null) return false;
 
-            foreach (var miner in miners)
-            {
-                if (miner.IsBuilt)
-                {
-                    bool collision = newX < miner.X + miner.Width &&
-                                     newX + Width > miner.X &&
-                                     newY < miner.Y + miner.Height &&
-                                     newY + Height > miner.Y;
-
-                    if (collision)
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
 
         // Обновим метод Move для проверки коллизий с добытчиками
         public void Move(double deltaX, double deltaY, Direction direction, List<Miner> miners = null)
