@@ -29,7 +29,7 @@ namespace Factorio
         private Player player;
         private Border outputBorder;
         private DispatcherTimer updateTimer;
-        private Resource targetResource; // Ресурс, на котором стоит добытчик
+        private Resource targetResource;
 
         public Miner(double x, double y, Player player)
         {
@@ -58,7 +58,6 @@ namespace Factorio
                 Opacity = 0.5
             };
 
-            // Добавляем обработчик клика
             Sprite.MouseDown += OnMinerClicked;
 
             UpdatePosition();
@@ -122,9 +121,8 @@ namespace Factorio
         {
             OutputSlot = new InventorySlot { Type = ResourceType.None, Count = 0 };
 
-            // Таймер для добычи (каждую секунду)
             miningTimer = new DispatcherTimer();
-            miningTimer.Interval = TimeSpan.FromSeconds(1.0);
+            miningTimer.Interval = TimeSpan.FromSeconds(1.5);
             miningTimer.Tick += MiningTimer_Tick;
         }
 

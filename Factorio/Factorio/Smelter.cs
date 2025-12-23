@@ -170,10 +170,13 @@ namespace Factorio
                 smeltingProgress = 0;
             }
 
-            smeltingProgress += 0.1; // Увеличиваем прогресс
+            smeltingProgress += 0.1;
 
             if (smeltingProgress >= smeltingTime)
             {
+                // Сохраняем тип входного ресурса ПЕРЕД уменьшением
+                ResourceType inputResourceType = InputSlot.Type;
+
                 // Завершаем переплавку
                 FuelSlot.Count--;
                 if (FuelSlot.Count <= 0) FuelSlot.Type = ResourceType.None;
@@ -181,13 +184,13 @@ namespace Factorio
                 InputSlot.Count--;
                 if (InputSlot.Count <= 0) InputSlot.Type = ResourceType.None;
 
-                // Определяем тип слитка на выходе
+                // Определяем тип слитка на выходе по СОХРАНЕННОМУ типу
                 ResourceType outputType;
-                if (InputSlot.Type == ResourceType.Iron)
+                if (inputResourceType == ResourceType.Iron)
                 {
                     outputType = ResourceType.IronIngot;
                 }
-                else if (InputSlot.Type == ResourceType.Copper)
+                else if (inputResourceType == ResourceType.Copper)
                 {
                     outputType = ResourceType.CopperIngot;
                 }

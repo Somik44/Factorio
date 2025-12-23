@@ -34,7 +34,7 @@ namespace Factorio
         private int frameIndex;
 
         private Image resourceSprite;
-        private const double TransportSpeed = 0.03;
+        private const double TransportSpeed = 0.08;
 
         private ResourceType bufferedResource = ResourceType.None;
 
