@@ -24,20 +24,9 @@ namespace Factorio
             X = x;
             Y = y;
             Type = type;
-            Amount = int.MaxValue; // Бесконечные ресурсы
-
-            // Устанавливаем разные размеры для разных ресурсов
-            switch (type)
-            {
-                case ResourceType.Coal:
-                    Width = 25;
-                    Height = 25;
-                    break;
-                default:
-                    Width = 40;
-                    Height = 40;
-                    break;
-            }
+            Amount = int.MaxValue; 
+            Width = 30;
+            Height = 30;
 
             InitializeSprite();
         }
@@ -50,18 +39,6 @@ namespace Factorio
                 Height = Height,
                 Stretch = Stretch.Uniform,
                 Source = LoadResourceTexture(Type)
-            };
-            amountText = new TextBlock
-            {
-                Text = "∞", // Символ бесконечности
-                Foreground = Brushes.White,
-                Background = Brushes.Black,
-                FontWeight = FontWeights.Bold,
-                FontSize = 10,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-                Padding = new Thickness(2),
-                Visibility = Visibility.Collapsed // Скрываем, т.к. ресурсы бесконечные
             };
 
             UpdatePosition();
@@ -154,12 +131,6 @@ namespace Factorio
         {
             Canvas.SetLeft(Sprite, X);
             Canvas.SetTop(Sprite, Y);
-
-            if (amountText != null && amountText.Parent != null)
-            {
-                Canvas.SetLeft(amountText, X + Width - 15);
-                Canvas.SetTop(amountText, Y - 5);
-            }
         }
 
         public void AddToCanvas(Canvas canvas)
@@ -169,26 +140,16 @@ namespace Factorio
                 canvas.Children.Add(Sprite);
                 Canvas.SetZIndex(Sprite, 10);
                 UpdatePosition();
-
-                // Для бесконечных ресурсов не добавляем amountText
-                // Но оставим на случай, если захотим показать ∞
-                canvas.Children.Add(amountText);
-                Canvas.SetZIndex(amountText, 11);
             }
         }
-
         public void RemoveFromCanvas(Canvas canvas)
         {
             if (canvas.Children.Contains(Sprite))
                 canvas.Children.Remove(Sprite);
-            if (canvas.Children.Contains(amountText))
-                canvas.Children.Remove(amountText);
         }
 
         public void DecreaseAmount(int amount)
         {
-            // Бесконечные ресурсы - не уменьшаем количество
-            // Метод оставляем для совместимости, но ничего не делаем
             return;
         }
 

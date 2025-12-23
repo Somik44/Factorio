@@ -442,16 +442,9 @@ namespace Factorio
                 ResourceType type = (ResourceType)random.Next(4);
 
                 double width, height;
-                if (type == ResourceType.Coal)
-                {
-                    width = 25;
-                    height = 25;
-                }
-                else
-                {
-                    width = 40;
-                    height = 40;
-                }
+                width = 30;
+                height = 30;
+
 
 
                 x += (GridSize - width) / 2;
@@ -530,15 +523,6 @@ namespace Factorio
             return true;
         }
 
-        private bool IsResourcePositionValid(double x, double y, double minDistance = 80)
-        {
-            foreach (var resource in resources)
-            {
-                double distance = Math.Sqrt(Math.Pow(resource.X - x, 2) + Math.Pow(resource.Y - y, 2));
-                if (distance < minDistance) return false;
-            }
-            return true;
-        }
 
         private void ShowMessage(string message)
         {
