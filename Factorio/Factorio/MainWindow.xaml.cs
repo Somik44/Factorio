@@ -39,6 +39,7 @@ namespace Factorio
         private bool isLeftPressed = false;
         private bool isRightPressed = false;
         private bool isMiningPressed = false;
+        private bool isDeletingMode = false;
 
         // Состояние постройки
         private bool isBuildingMode = false;
@@ -55,11 +56,12 @@ namespace Factorio
         // НОВЫЙ РЕЖИМ СОЕДИНЕНИЯ КОНВЕЙЕРОВ С ЗДАНИЯМИ
         private bool isSelectingConveyorForBuilding = false;
         private object selectedBuildingForConnection = null;
-        private bool isConnectingInput = true; // true = вход, false = выход
+        private bool isConnectingInput = true;
 
         //npc
         private List<Insect> insects = new List<Insect>();
         private List<Cannon> cannons = new List<Cannon>();
+
 
         public MainWindow()
         {
@@ -466,11 +468,15 @@ namespace Factorio
             switch (e.Key)
             {
                 case Key.Escape:
-                    if (isBuildingMode) CancelBuildingMode();
-                    else if (isSelectingConveyorForBuilding) CancelSelectConveyorForBuilding();
-                    else this.Close();
+                    if (isDeletingMode)
+                        CancelDeletingMode();
+                    else if (isBuildingMode)
+                        CancelBuildingMode();
+                    else if (isSelectingConveyorForBuilding)
+                        CancelSelectConveyorForBuilding();
+                    else
+                        this.Close();
                     break;
-
                 case Key.W: case Key.Up: isUpPressed = true; break;
                 case Key.S: case Key.Down: isDownPressed = true; break;
                 case Key.A: case Key.Left: isLeftPressed = true; break;
@@ -515,6 +521,12 @@ namespace Factorio
                 case Key.E:
                     if (Keyboard.Modifiers == ModifierKeys.Control)
                         EmergencyCleanup();
+                    break;
+                case Key.Delete:
+                    if (!isDeletingMode)
+                        StartDeletingMode();
+                    else
+                        CancelDeletingMode();
                     break;
             }
         }
@@ -608,6 +620,12 @@ namespace Factorio
         private BitmapImage LoadBuildingPreview(string buildingType)
         {
             string basePath = @"C:\Users\Михаил\Desktop\Game\Factorio\Factorio\textures\Factory\";
+
+            if (buildingType == "cannon")
+            {
+                basePath = @"C:\Users\Михаил\Desktop\Game\Factorio\Factorio\textures\npc\";
+            }
+
             string fileName = buildingType switch
             {
                 "smelter" => "Smelter.png",
@@ -633,6 +651,7 @@ namespace Factorio
                 "miner" => "MI",
                 "conveyor" => "CV",
                 "arms_factory" => "AF",
+                "cannon" => "CA",
                 _ => "??"
             };
 
@@ -647,6 +666,7 @@ namespace Factorio
                     "miner" => Brushes.DarkBlue,
                     "conveyor" => Brushes.DarkGreen,
                     "arms_factory" => Brushes.DarkBlue,
+                    "cannon" => Brushes.DarkRed,
                     _ => Brushes.White
                 };
 
@@ -909,6 +929,18 @@ namespace Factorio
             var position = e.GetPosition(GameCanvas);
             var snappedPosition = SnapToGrid(position);
             Point clickPoint = new Point(snappedPosition.X, snappedPosition.Y);
+
+            if (isDeletingMode && e.LeftButton == MouseButtonState.Pressed)
+            {
+                DeleteBuildingAtPoint(clickPoint);
+                return;
+            }
+
+            if (isDeletingMode && e.RightButton == MouseButtonState.Pressed)
+            {
+                CancelDeletingMode();
+                return;
+            }
 
             // Режим выбора конвейера для здания (левая кнопка)
             if (isSelectingConveyorForBuilding && e.LeftButton == MouseButtonState.Pressed)
@@ -1409,8 +1441,14 @@ namespace Factorio
             foreach (var smelter in smelters)
                 if (smelter.IsBuilt && smelter.IsPointInside(point)) return smelter;
 
+            foreach (var conveyor in conveyors)
+                if (conveyor.IsBuilt && conveyor.IsPointInside(point)) return conveyor;
+
             foreach (var armsFactory in armsFactories)
                 if (armsFactory.IsBuilt && armsFactory.IsPointInside(point)) return armsFactory;
+
+            foreach (var cannon in cannons)
+                if (cannon.IsBuilt && cannon.IsPointInside(point)) return cannon;
 
             return null;
         }
@@ -1506,6 +1544,225 @@ namespace Factorio
         private void ToggleGridButton_Click(object sender, RoutedEventArgs e)
         {
             ToggleGrid();
+        }
+
+        //удаление
+        private void DeleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isDeletingMode)
+            {
+                StartDeletingMode();
+            }
+            else
+            {
+                CancelDeletingMode();
+            }
+        }
+
+        private void StartDeletingMode()
+        {
+            isDeletingMode = true;
+            CancelBuildingMode();
+            CancelLineMode();
+            CancelSelectConveyorForBuilding();
+
+            DeleteButton.Background = Brushes.Red;
+            DeleteButton.Content = "Отмена";
+
+            BuildHint.Visibility = Visibility.Visible;
+            BuildHintText.Text = "РЕЖИМ УДАЛЕНИЯ:\nКликните на постройку для удаления\n(Esc или правый клик для отмены)";
+
+            HighlightAllBuildings(true);
+        }
+
+        private void CancelDeletingMode()
+        {
+            isDeletingMode = false;
+
+            DeleteButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF555555"));
+            DeleteButton.Content = "Удалить";
+
+            BuildHint.Visibility = Visibility.Collapsed;
+
+            HighlightAllBuildings(false);
+        }
+
+        private void HighlightAllBuildings(bool highlight)
+        {
+            foreach (var miner in miners)
+            {
+                if (miner.IsBuilt)
+                {
+                    miner.Sprite.Opacity = highlight ? 0.5 : 1.0;
+                }
+            }
+
+            foreach (var smelter in smelters)
+            {
+                if (smelter.IsBuilt)
+                {
+                    smelter.Sprite.Opacity = highlight ? 0.5 : 1.0;
+                }
+            }
+            foreach (var conveyor in conveyors)
+            {
+                if (conveyor.IsBuilt)
+                {
+                    conveyor.Sprite.Opacity = highlight ? 0.5 : 1.0;
+                }
+            }
+
+            foreach (var armsFactory in armsFactories)
+            {
+                if (armsFactory.IsBuilt)
+                {
+                    armsFactory.Sprite.Opacity = highlight ? 0.5 : 1.0;
+                }
+            }
+
+            foreach (var cannon in cannons)
+            {
+                if (cannon.IsBuilt)
+                {
+                    cannon.Sprite.Opacity = highlight ? 0.5 : 1.0;
+                }
+            }
+        }
+
+        private void DeleteBuildingAtPoint(Point point)
+        {
+            object buildingToDelete = FindBuildingAtPoint(point);
+
+            if (buildingToDelete != null)
+            {
+                string buildingType = GetBuildingName(buildingToDelete);
+
+                MessageBoxResult result = MessageBox.Show(
+                    $"Удалить {buildingType}?\nВозвращается 50% ресурсов.",
+                    "Удаление постройки",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    DeleteBuildingAndReturnResources(buildingToDelete);
+                }
+            }
+            else
+            {
+                ShowMessage("На этой клетке нет построек!");
+            }
+
+            CancelDeletingMode();
+        }
+
+        private void DeleteBuildingAndReturnResources(object building)
+        {
+            if (building is Miner miner)
+            {
+                // Возвращаем 50% ресурсов за добытчик
+                int ironToReturn = (int)Math.Ceiling(5 * 0.5); // 3
+                int copperToReturn = (int)Math.Ceiling(5 * 0.5); // 3
+
+                player.AddResource(ResourceType.IronIngot, ironToReturn);
+                player.AddResource(ResourceType.CopperIngot, copperToReturn);
+
+                miner.RemoveFromCanvas(GameCanvas);
+                miners.Remove(miner);
+
+                // Отключаем связанные конвейеры
+                foreach (var conveyor in conveyors)
+                {
+                    if (conveyor.LinkedBuilding == miner)
+                    {
+                        conveyor.LinkedBuilding = null;
+                        conveyor.IsInputConveyor = false;
+                        conveyor.IsOutputConveyor = false;
+                    }
+                }
+
+                ShowMessage($"Добытчик удален! Возвращено {ironToReturn} жел.слитков и {copperToReturn} мед.слитков");
+            }
+            else if (building is Smelter smelter)
+            {
+                // Возвращаем 50% ресурсов за плавильню
+                int stoneToReturn = (int)Math.Ceiling(10 * 0.5); // 5
+                int coalToReturn = (int)Math.Ceiling(5 * 0.5); // 3
+
+                player.AddResource(ResourceType.Stone, stoneToReturn);
+                player.AddResource(ResourceType.Coal, coalToReturn);
+
+                smelter.RemoveFromCanvas(GameCanvas);
+                smelters.Remove(smelter);
+
+                // Отключаем связанные конвейеры
+                foreach (var conveyor in conveyors)
+                {
+                    if (conveyor.LinkedBuilding == smelter)
+                    {
+                        conveyor.LinkedBuilding = null;
+                        conveyor.IsInputConveyor = false;
+                        conveyor.IsOutputConveyor = false;
+                    }
+                }
+
+                ShowMessage($"Плавильня удалена! Возвращено {stoneToReturn} камня и {coalToReturn} угля");
+            }
+            else if (building is Conveyor conveyor)
+            {
+                // Возвращаем 50% ресурсов за конвейер
+                int ironToReturn = (int)Math.Ceiling(2 * 0.5); // 1
+
+                player.AddResource(ResourceType.IronIngot, ironToReturn);
+
+                conveyor.RemoveFromCanvas(GameCanvas);
+                conveyors.Remove(conveyor);
+
+                ShowMessage($"Конвейер удален! Возвращено {ironToReturn} жел.слиток");
+            }
+            else if (building is ArmsFactory armsFactory)
+            {
+                // Возвращаем 50% ресурсов за оружейный завод
+                int stoneToReturn = (int)Math.Ceiling(15 * 0.5); // 8
+                int ironToReturn = (int)Math.Ceiling(10 * 0.5); // 5
+                int copperToReturn = (int)Math.Ceiling(10 * 0.5); // 5
+
+                player.AddResource(ResourceType.Stone, stoneToReturn);
+                player.AddResource(ResourceType.IronIngot, ironToReturn);
+                player.AddResource(ResourceType.CopperIngot, copperToReturn);
+
+                armsFactory.RemoveFromCanvas(GameCanvas);
+                armsFactories.Remove(armsFactory);
+
+                // Отключаем связанные конвейеры
+                foreach (var conv in conveyors)
+                {
+                    if (conv.LinkedBuilding == armsFactory)
+                    {
+                        conv.LinkedBuilding = null;
+                        conv.IsInputConveyor = false;
+                        conv.IsOutputConveyor = false;
+                    }
+                }
+
+                ShowMessage($"Оружейный завод удален! Возвращено {stoneToReturn} камня, {ironToReturn} жел.слитков и {copperToReturn} мед.слитков");
+            }
+            else if (building is Cannon cannon)
+            {
+                // Возвращаем 50% ресурсов за пушку
+                int ironToReturn = (int)Math.Ceiling(5 * 0.5); // 3
+                int gearsToReturn = (int)Math.Ceiling(6 * 0.5); // 3
+                int ammoToReturn = (int)Math.Ceiling(3 * 0.5); // 2
+
+                player.AddResource(ResourceType.IronIngot, ironToReturn);
+                player.AddResource(ResourceType.Gears, gearsToReturn);
+                player.AddResource(ResourceType.Ammo, ammoToReturn);
+
+                cannon.RemoveFromCanvas(GameCanvas);
+                cannons.Remove(cannon);
+
+                ShowMessage($"Пушка удалена! Возвращено {ironToReturn} жел.слитков, {gearsToReturn} деталей и {ammoToReturn} патронов");
+            }
         }
     }
 }

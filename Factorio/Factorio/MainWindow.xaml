@@ -13,14 +13,10 @@
         KeyUp="Window_KeyUp">
 
     <Grid>
-        <!-- Основной контейнер игры -->
         <Canvas x:Name="GameCanvas" Background="Black">
-            <!-- Тайлы и игровые объекты будут добавляться сюда -->
         </Canvas>
 
-        <!-- Панель управления поверх игры -->
         <Grid>
-            <!-- Кнопка закрытия в правом верхнем углу -->
             <Button x:Name="CloseButton" 
                     Content="X" 
                     Width="30" 
@@ -32,6 +28,28 @@
                     Foreground="White"
                     FontWeight="Bold"
                     Click="CloseButton_Click"/>
+
+            <Button x:Name="DeleteButton" 
+        Content="Удалить " 
+        Width="80" 
+        Height="30" 
+        HorizontalAlignment="Right" 
+        VerticalAlignment="Top" 
+        Margin="0,10,50,0"
+        Background="#FF555555" 
+        Foreground="White"
+        FontWeight="Bold"
+        Click="DeleteButton_Click">
+                <Button.ToolTip>
+                    <ToolTip>
+                        <StackPanel>
+                            <TextBlock Text="Режим удаления построек"/>
+                            <TextBlock Text="Кликните на постройку для удаления"/>
+                            <TextBlock Text="Отмена: Esc или правый клик"/>
+                        </StackPanel>
+                    </ToolTip>
+                </Button.ToolTip>
+            </Button>
         </Grid>
 
         <!-- Панель инвентаря -->
@@ -102,7 +120,7 @@
                 <!-- Кнопка постройки плавильни -->
                 <Button x:Name="BuildSmelterButton"
                         Content="Плавильня (10 камня + 5 угля)"
-                        Width="200"
+                        Width="350"
                         Height="40"
                         Background="#FF333333"
                         Foreground="White"
@@ -123,7 +141,7 @@
                 <!-- В меню постройки добавьте эту кнопку после кнопки плавильни -->
                 <Button x:Name="BuildMinerButton"
                         Content="Добытчик (5 жел.слитков + 5 мед.слитков)"
-                        Width="250"
+                        Width="350"
                         Height="40"
                         Background="#FF333333"
                         Foreground="White"
@@ -144,7 +162,7 @@
 
                 <Button x:Name="BuildArmsFactoryButton"
         Content="Оружейный завод (15 камня + 10 жел.слитков + 10 мед.слитков)"
-        Width="250"
+        Width="350"
         Height="40"
         Background="#FF333333"
         Foreground="White"
@@ -166,7 +184,7 @@
                 <!-- Кнопка постройки одного конвейера -->
                 <Button x:Name="BuildConveyorButton"
                         Content="Конвейер (2 железных слитка)"
-                        Width="200"
+                        Width="350"
                         Height="40"
                         Background="#FF333333"
                         Foreground="White"
@@ -189,7 +207,7 @@
                 <Button x:Name="BuildCannonButton" Content="Пушка (5 жел.слитков + 6 деталей + 3 патрона)" 
                         Click="BuildCannonButton_Click" 
                         Margin="5" 
-                        Width="250" 
+                        Width="350" 
                         Height="30"
                         Background="#FF333333"
                         Foreground="White"
@@ -211,7 +229,7 @@
                 <!-- В меню постройки добавьте -->
                 <Button x:Name="ToggleGridButton"
         Content="Сетка: Вкл"
-        Width="150"
+        Width="350"
         Height="30"
         Background="#FF333333"
         Foreground="White"
@@ -267,10 +285,10 @@
                 <ProgressBar x:Name="HealthBar" 
                      Width="200" 
                      Height="20" 
-                     Maximum="4" 
-                     Value="4"/>
+                     Maximum="6" 
+                     Value="6"/>
                 <TextBlock x:Name="HealthText" 
-                   Text="4/4" 
+                   Text="6/6" 
                    Foreground="White" 
                    HorizontalAlignment="Center"/>
             </StackPanel>

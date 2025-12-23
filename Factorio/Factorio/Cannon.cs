@@ -18,7 +18,7 @@ namespace Factorio
         public double Width { get; private set; }
         public double Height { get; private set; }
         public bool IsBuilt { get; private set; }
-        public double Range { get; private set; } = 120; // 4 клетки (30*4)
+        public double Range { get; private set; } = 120;
 
         private DispatcherTimer shootTimer;
         private DispatcherTimer shotAnimationTimer;
@@ -31,7 +31,7 @@ namespace Factorio
         {
             X = x;
             Y = y;
-            Width = 60; // 2x2 клетки
+            Width = 60;
             Height = 60;
             IsBuilt = false;
 
@@ -110,16 +110,14 @@ namespace Factorio
             IsBuilt = true;
             Sprite.Opacity = 1.0;
 
-            // Запускаем таймер стрельбы
             shootTimer = new DispatcherTimer();
-            shootTimer.Interval = TimeSpan.FromSeconds(1.5); // Стреляет каждые 1.5 секунды
+            shootTimer.Interval = TimeSpan.FromSeconds(1); 
             shootTimer.Tick += (s, e) => Shoot();
             shootTimer.Start();
 
             // Таймер для анимации выстрелов
             shotAnimationTimer = new DispatcherTimer();
-            shotAnimationTimer.Interval = TimeSpan.FromMilliseconds(50); // Быстрая анимация
-            shotAnimationTimer.Tick += (s, e) => UpdateShots();
+            shotAnimationTimer.Interval = TimeSpan.FromMilliseconds(50);
             shotAnimationTimer.Start();
         }
 
@@ -138,7 +136,6 @@ namespace Factorio
             if (targetInsects == null || targetInsects.Count == 0) return;
             if (gameCanvas == null) return;
 
-            // Ищем ближайшего жука в радиусе
             Insect nearestInsect = null;
             double nearestDistance = double.MaxValue;
 
@@ -162,13 +159,10 @@ namespace Factorio
                 }
             }
 
-            // Если нашли цель - стреляем
             if (nearestInsect != null)
             {
-                // Создаем выстрел (шарик)
                 CreateShot(nearestInsect);
 
-                // Наносим урон жуку
                 nearestInsect.TakeDamage(1);
             }
         }
@@ -177,7 +171,6 @@ namespace Factorio
         {
             if (gameCanvas == null) return;
 
-            // Создаем шарик (снаряд)
             Ellipse shot = new Ellipse
             {
                 Width = 10,
@@ -193,24 +186,20 @@ namespace Factorio
                 StrokeThickness = 1
             };
 
-            // Начальная позиция (центр пушки)
             double startX = X + Width / 2 - shot.Width / 2;
             double startY = Y + Height / 2 - shot.Height / 2;
 
-            // Конечная позиция (центр цели)
             double targetX = target.X + target.Width / 2 - shot.Width / 2;
             double targetY = target.Y + target.Height / 2 - shot.Height / 2;
 
             Canvas.SetLeft(shot, startX);
             Canvas.SetTop(shot, startY);
-            Canvas.SetZIndex(shot, 60); // Выше зданий, но ниже игрока
+            Canvas.SetZIndex(shot, 60); 
 
             gameCanvas.Children.Add(shot);
 
-            // Добавляем выстрел в список активных
             activeShots.Add(shot);
 
-            // Запускаем анимацию полета снаряда
             AnimateShot(shot, startX, startY, targetX, targetY, target);
         }
 
@@ -316,11 +305,6 @@ namespace Factorio
             effectTimer.Start();
         }
 
-        private void UpdateShots()
-        {
-            // Здесь можно обновлять другие аспекты анимации выстрелов
-            // Например, мигание или дополнительные эффекты
-        }
 
         private void UpdatePosition()
         {
@@ -345,7 +329,6 @@ namespace Factorio
                 canvas.Children.Remove(Sprite);
             }
 
-            // Удаляем все активные выстрелы
             foreach (var shot in activeShots)
             {
                 if (canvas.Children.Contains(shot))
@@ -354,6 +337,12 @@ namespace Factorio
                 }
             }
             activeShots.Clear();
+        }
+
+        public bool IsPointInside(Point point)
+        {
+            return point.X >= X && point.X <= X + Width &&
+                   point.Y >= Y && point.Y <= Y + Height;
         }
     }
 }

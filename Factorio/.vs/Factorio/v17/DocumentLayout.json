@@ -3,20 +3,16 @@
   "WorkspaceRootPath": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|c:\\users\\\u043C\u0438\u0445\u0430\u0438\u043B\\desktop\\game\\factorio\\factorio\\factorio\\conveyor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|solutionrelative:factorio\\conveyor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|c:\\users\\\u043C\u0438\u0445\u0430\u0438\u043B\\desktop\\game\\factorio\\factorio\\factorio\\player.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|solutionrelative:factorio\\player.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|c:\\users\\\u043C\u0438\u0445\u0430\u0438\u043B\\desktop\\game\\factorio\\factorio\\factorio\\enums.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|solutionrelative:factorio\\enums.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|c:\\users\\\u043C\u0438\u0445\u0430\u0438\u043B\\desktop\\game\\factorio\\factorio\\factorio\\cannon.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|solutionrelative:factorio\\cannon.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|c:\\users\\\u043C\u0438\u0445\u0430\u0438\u043B\\desktop\\game\\factorio\\factorio\\factorio\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|solutionrelative:factorio\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|c:\\users\\\u043C\u0438\u0445\u0430\u0438\u043B\\desktop\\game\\factorio\\factorio\\factorio\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|solutionrelative:factorio\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
     }
   ],
   "DocumentGroupContainers": [
@@ -26,7 +22,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 3,
+          "SelectedChildIndex": 1,
           "Children": [
             {
               "$type": "Bookmark",
@@ -34,54 +30,41 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "Enums.cs",
-              "DocumentMoniker": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Enums.cs",
-              "RelativeDocumentMoniker": "Factorio\\Enums.cs",
-              "ToolTip": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Enums.cs",
-              "RelativeToolTip": "Factorio\\Enums.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "DocumentIndex": 0,
+              "Title": "Cannon.cs",
+              "DocumentMoniker": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Cannon.cs",
+              "RelativeDocumentMoniker": "Factorio\\Cannon.cs",
+              "ToolTip": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Cannon.cs",
+              "RelativeToolTip": "Factorio\\Cannon.cs",
+              "ViewState": "AgIAACwAAAAAAAAAAAAUwHcAAABIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-23T09:37:43.002Z",
+              "WhenOpened": "2025-12-23T12:22:18.637Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "MainWindow.xaml",
+              "DocumentMoniker": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\MainWindow.xaml",
+              "RelativeDocumentMoniker": "Factorio\\MainWindow.xaml",
+              "ToolTip": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\MainWindow.xaml",
+              "RelativeToolTip": "Factorio\\MainWindow.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2025-12-23T12:05:13.259Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 1,
-              "Title": "Player.cs",
-              "DocumentMoniker": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Player.cs",
-              "RelativeDocumentMoniker": "Factorio\\Player.cs",
-              "ToolTip": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Player.cs",
-              "RelativeToolTip": "Factorio\\Player.cs",
-              "ViewState": "AgIAAJUBAAAAAAAAAAAuwFoBAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-23T09:29:05.784Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "Conveyor.cs",
-              "DocumentMoniker": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Conveyor.cs",
-              "RelativeDocumentMoniker": "Factorio\\Conveyor.cs",
-              "ToolTip": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Conveyor.cs",
-              "RelativeToolTip": "Factorio\\Conveyor.cs",
-              "ViewState": "AgIAANEAAAAAAAAAAAAwwJYAAAAUAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-22T20:47:36.197Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
               "Title": "MainWindow.xaml.cs",
               "DocumentMoniker": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\MainWindow.xaml.cs",
               "RelativeDocumentMoniker": "Factorio\\MainWindow.xaml.cs",
               "ToolTip": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\MainWindow.xaml.cs",
               "RelativeToolTip": "Factorio\\MainWindow.xaml.cs",
-              "ViewState": "AgIAAN8EAAAAAAAAAAAAAPwEAAANAAAAAAAAAA==",
+              "ViewState": "AgIAABgCAAAAAAAAAAAcwG4CAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-13T10:24:24.057Z"
+              "WhenOpened": "2025-12-13T10:24:24.057Z",
+              "EditorCaption": ""
             }
           ]
         }
