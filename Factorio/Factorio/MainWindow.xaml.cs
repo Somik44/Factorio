@@ -424,28 +424,110 @@ namespace Factorio
 
         private void SpawnRandomResource()
         {
-            int attempts = 0;
-            double x = 0, y = 0;
+              int attempts = 0;
+            int gridX = 0, gridY = 0;
+
+            int maxGridX = (int)(this.ActualWidth / GridSize) - 1;
+            int maxGridY = (int)(this.ActualHeight / GridSize) - 1;
+
+            int minBorder = 2;
 
             do
             {
-                x = random.Next(50, (int)this.ActualWidth - 100);
-                y = random.Next(50, (int)this.ActualHeight - 200);
+                gridX = random.Next(minBorder, maxGridX - minBorder);
+                gridY = random.Next(minBorder, maxGridY - minBorder);
+                double x = gridX * GridSize;
+                double y = gridY * GridSize;
+
+                ResourceType type = (ResourceType)random.Next(4);
+
+                double width, height;
+                if (type == ResourceType.Coal)
+                {
+                    width = 25;
+                    height = 25;
+                }
+                else
+                {
+                    width = 40;
+                    height = 40;
+                }
+
+
+                x += (GridSize - width) / 2;
+                y += (GridSize - height) / 2;
+
                 attempts++;
                 if (attempts > 100) break;
-            } while (!IsResourcePositionValid(x, y, 80));
 
-            double distanceToPlayer = Math.Sqrt(Math.Pow(x - player.X, 2) + Math.Pow(y - player.Y, 2));
-            if (distanceToPlayer < 100)
+                if (IsGridCellValid(gridX, gridY, 2))
+                {
+                    Resource resource = new Resource(x, y, type);
+                    resource.AddToCanvas(GameCanvas);
+                    resources.Add(resource);
+
+                    resource.Tag = $"{gridX},{gridY}";
+                    return;
+                }
+
+            } while (true);
+        }
+
+        private bool IsGridCellValid(int gridX, int gridY, int minDistanceInCells = 2)
+        {
+            foreach (var resource in resources)
             {
-                x = (x + 200) % (this.ActualWidth - 150);
-                y = (y + 200) % (this.ActualHeight - 250);
+                // Получаем координаты клетки для существующего ресурса
+                if (resource.Tag is string tag && tag.Contains(","))
+                {
+                    var parts = tag.Split(',');
+                    if (parts.Length == 2 &&
+                        int.TryParse(parts[0], out int existingGridX) &&
+                        int.TryParse(parts[1], out int existingGridY))
+                    {
+                        // Проверяем расстояние в клетках
+                        int cellDistanceX = Math.Abs(gridX - existingGridX);
+                        int cellDistanceY = Math.Abs(gridY - existingGridY);
+
+                        if (cellDistanceX < minDistanceInCells && cellDistanceY < minDistanceInCells)
+                        {
+                            return false;
+                        }
+                    }
+                }
+                else
+                {
+                    // Если у ресурса нет тега с координатами сетки, вычисляем их
+                    int existingGridX = (int)(resource.X / GridSize);
+                    int existingGridY = (int)(resource.Y / GridSize);
+
+                    int cellDistanceX = Math.Abs(gridX - existingGridX);
+                    int cellDistanceY = Math.Abs(gridY - existingGridY);
+
+                    if (cellDistanceX < minDistanceInCells && cellDistanceY < minDistanceInCells)
+                    {
+                        return false;
+                    }
+                }
             }
 
-            ResourceType type = (ResourceType)random.Next(4);
-            Resource resource = new Resource(x, y, type);
-            resource.AddToCanvas(GameCanvas);
-            resources.Add(resource);
+            // Проверяем расстояние до игрока в клетках
+            if (player != null)
+            {
+                int playerGridX = (int)(player.X / GridSize);
+                int playerGridY = (int)(player.Y / GridSize);
+
+                int distanceToPlayerX = Math.Abs(gridX - playerGridX);
+                int distanceToPlayerY = Math.Abs(gridY - playerGridY);
+
+                // Минимум 4 клетки от игрока
+                if (distanceToPlayerX < 4 && distanceToPlayerY < 4)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private bool IsResourcePositionValid(double x, double y, double minDistance = 80)

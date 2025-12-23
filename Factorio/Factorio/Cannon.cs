@@ -61,7 +61,6 @@ namespace Factorio
                 return new BitmapImage(new Uri(filePath));
             }
 
-            // Заглушка, если файл не найден
             return CreatePlaceholderSprite();
         }
 
@@ -115,7 +114,6 @@ namespace Factorio
             shootTimer.Tick += (s, e) => Shoot();
             shootTimer.Start();
 
-            // Таймер для анимации выстрелов
             shotAnimationTimer = new DispatcherTimer();
             shotAnimationTimer.Interval = TimeSpan.FromMilliseconds(50);
             shotAnimationTimer.Start();

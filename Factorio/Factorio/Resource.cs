@@ -17,6 +17,7 @@ namespace Factorio
         public ResourceType Type { get; private set; }
         public int Amount { get; private set; }
         private TextBlock amountText;
+        public object Tag { get; set; }
 
         public Resource(double x, double y, ResourceType type)
         {
