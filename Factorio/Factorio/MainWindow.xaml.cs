@@ -117,7 +117,6 @@ namespace Factorio
             gameLoopTimer.Start();
         }
 
-        // В методе GameLoop_Tick добавляем проверку коллизий жуков со зданиями
         private void GameLoop_Tick(object sender, EventArgs e)
         {
             UpdatePlayerMovement();
@@ -130,7 +129,6 @@ namespace Factorio
             UpdateInsects();
             UpdatePlayerHealth();
 
-            // Добавляем эту часть: проверка коллизий жуков со зданиями
             foreach (var insect in insects)
             {
                 if (!insect.IsDead)
@@ -139,14 +137,11 @@ namespace Factorio
                 }
             }
 
-            // Добавляем удаление разрушенных зданий
             RemoveDestroyedBuildings();
         }
 
-        // Добавляем метод для удаления разрушенных зданий (добавить в конец класса)
         private void RemoveDestroyedBuildings()
         {
-            // Удаляем разрушенных добытчиков
             for (int i = miners.Count - 1; i >= 0; i--)
             {
                 if (miners[i].IsDestroyed)
@@ -156,7 +151,6 @@ namespace Factorio
                 }
             }
 
-            // Удаляем разрушенные плавильни
             for (int i = smelters.Count - 1; i >= 0; i--)
             {
                 if (smelters[i].IsDestroyed)
@@ -166,7 +160,6 @@ namespace Factorio
                 }
             }
 
-            // Удаляем разрушенные оружейные заводы
             for (int i = armsFactories.Count - 1; i >= 0; i--)
             {
                 if (armsFactories[i].IsDestroyed)
@@ -176,7 +169,6 @@ namespace Factorio
                 }
             }
 
-            // Удаляем разрушенные конвейеры
             for (int i = conveyors.Count - 1; i >= 0; i--)
             {
                 if (conveyors[i].IsDestroyed)
@@ -186,7 +178,6 @@ namespace Factorio
                 }
             }
 
-            // Удаляем разрушенные пушки
             for (int i = cannons.Count - 1; i >= 0; i--)
             {
                 if (cannons[i].IsDestroyed)
