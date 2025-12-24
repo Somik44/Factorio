@@ -102,7 +102,7 @@ namespace Factorio
 
 
         //Движение
-        public void Move(double deltaX, double deltaY, Direction direction, List<Miner> miners = null)
+        public void Move(double deltaX, double deltaY, Direction direction, List<Miner> miners = null, List<Smelter> smelters = null, List<Conveyor> conveyors = null, List<ArmsFactory> armsFactories = null, List<Cannon> cannons = null)
         {
             IsMoving = true;
             CurrentDirection = direction;
@@ -110,13 +110,84 @@ namespace Factorio
             double newX = X + deltaX * Speed;
             double newY = Y + deltaY * Speed;
 
-            X = newX;
-            Y = newY;
+            Rect playerRect = new Rect(newX, newY, Width, Height);
 
-            X = Math.Max(0, Math.Min(X, SystemParameters.PrimaryScreenWidth - Width));
-            Y = Math.Max(0, Math.Min(Y, SystemParameters.PrimaryScreenHeight - Height));
+            bool hasCollision = false;
 
-            UpdatePosition();
+            if (miners != null)
+            {
+                foreach (var miner in miners)
+                {
+                    if (miner.IsBuilt && playerRect.IntersectsWith(new Rect(miner.X, miner.Y, miner.Width, miner.Height)))
+                    {
+                        hasCollision = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!hasCollision && smelters != null)
+            {
+                foreach (var smelter in smelters)
+                {
+                    if (smelter.IsBuilt && playerRect.IntersectsWith(new Rect(smelter.X, smelter.Y, smelter.Width, smelter.Height)))
+                    {
+                        hasCollision = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!hasCollision && conveyors != null)
+            {
+                foreach (var conveyor in conveyors)
+                {
+                    if (conveyor.IsBuilt && playerRect.IntersectsWith(new Rect(conveyor.X, conveyor.Y, conveyor.Width, conveyor.Height)))
+                    {
+                        hasCollision = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!hasCollision && armsFactories != null)
+            {
+                foreach (var armsFactory in armsFactories)
+                {
+                    if (armsFactory.IsBuilt && playerRect.IntersectsWith(new Rect(armsFactory.X, armsFactory.Y, armsFactory.Width, armsFactory.Height)))
+                    {
+                        hasCollision = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!hasCollision && cannons != null)
+            {
+                foreach (var cannon in cannons)
+                {
+                    if (cannon.IsBuilt && playerRect.IntersectsWith(new Rect(cannon.X, cannon.Y, cannon.Width, cannon.Height)))
+                    {
+                        hasCollision = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!hasCollision)
+            {
+                X = newX;
+                Y = newY;
+
+                X = Math.Max(0, Math.Min(X, SystemParameters.PrimaryScreenWidth - Width));
+                Y = Math.Max(0, Math.Min(Y, SystemParameters.PrimaryScreenHeight - Height));
+
+                UpdatePosition();
+            }
+            else
+            {
+                IsMoving = false;
+            }
         }
 
         public void Stop()

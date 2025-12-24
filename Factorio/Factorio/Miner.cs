@@ -143,24 +143,29 @@ namespace Factorio
         }
 
         //Постройка
-        public bool CheckPlacementOnResource(List<Resource> resources, double minDistance = 100)
+        public bool CheckPlacementOnResource(List<Resource> resources)
         {
+            double minerCenterX = X + Width / 2;
+            double minerCenterY = Y + Height / 2;
+
             foreach (var resource in resources)
             {
-                double distance = Math.Sqrt(Math.Pow(resource.X - X, 2) + Math.Pow(resource.Y - Y, 2));
 
-                if (distance < 40)
+                double resourceCenterX = resource.X + resource.Width / 2;
+                double resourceCenterY = resource.Y + resource.Height / 2;
+
+                double distance = Math.Sqrt(
+                    Math.Pow(resourceCenterX - minerCenterX, 2) +
+                    Math.Pow(resourceCenterY - minerCenterY, 2)
+                );
+
+                if (distance <= 30)
                 {
                     IsPlacedOnResource = true;
                     MiningType = resource.Type;
                     targetResource = resource;
                     Sprite.Opacity = 1.0;
                     return true;
-                }
-
-                if (distance < minDistance)
-                {
-                    return false;
                 }
             }
 

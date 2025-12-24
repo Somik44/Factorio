@@ -142,10 +142,281 @@ namespace Factorio
             }
         }
 
-        //Размещения объектов
+        //Ввод
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            switch (e.Key)
+            {
+                case Key.Escape:
+                    if (isDeletingMode)
+                        CancelDeletingMode();
+                    else if (isBuildingMode)
+                        CancelBuildingMode();
+                    else if (isSelectingConveyorForBuilding)
+                        CancelSelectConveyorForBuilding();
+                    else
+                        this.Close();
+                    break;
+                case Key.W: case Key.Up: isUpPressed = true; break;
+                case Key.S: case Key.Down: isDownPressed = true; break;
+                case Key.A: case Key.Left: isLeftPressed = true; break;
+                case Key.D: case Key.Right: isRightPressed = true; break;
+                case Key.Space: isMiningPressed = true; break;
+                case Key.R: SpawnRandomResource(); break;
+                case Key.I: ShowInventoryInfo(); break;
+
+                case Key.Tab:
+                    if (!isBuildingMode && !isBuildingLine && !isSelectingConveyorForBuilding)
+                        OpenBuildMenu();
+                    else
+                    {
+                        CancelBuildingMode();
+                        CancelLineMode();
+                        CancelSelectConveyorForBuilding();
+                    }
+                    e.Handled = true;
+                    break;
+
+                case Key.C:
+                    if (isBuildingMode) CancelBuildingMode();
+                    else if (isSelectingConveyorForBuilding) CancelSelectConveyorForBuilding();
+                    else ShowMessage("Используйте ПРАВЫЙ клик по зданию для соединения с конвейером");
+                    break;
+
+                case Key.T: CreateTestSetup(); break;
+                case Key.G: ToggleGrid(); break;
+
+                case Key.M:
+                    if (!isBuildingMode && !isBuildingLine && !isSelectingConveyorForBuilding)
+                        SpawnInsects();
+                    else
+                        ShowInventoryInfo();
+                    break;
+
+                case Key.E:
+                    if (Keyboard.Modifiers == ModifierKeys.Control)
+                        EmergencyCleanup();
+                    break;
+                case Key.Delete:
+                    if (!isDeletingMode)
+                        StartDeletingMode();
+                    else
+                        CancelDeletingMode();
+                    break;
+            }
+        }
+
+        private void Window_KeyUp(object sender, KeyEventArgs e)
+        {
+            switch (e.Key)
+            {
+                case Key.W: case Key.Up: isUpPressed = false; break;
+                case Key.S: case Key.Down: isDownPressed = false; break;
+                case Key.A: case Key.Left: isLeftPressed = false; break;
+                case Key.D: case Key.Right: isRightPressed = false; break;
+                case Key.Space: isMiningPressed = false; break;
+            }
+        }
+
+        private void GameCanvas_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            var position = e.GetPosition(GameCanvas);
+            var snappedPosition = SnapToGrid(position);
+            Point clickPoint = new Point(snappedPosition.X, snappedPosition.Y);
+
+            if (isDeletingMode && e.LeftButton == MouseButtonState.Pressed)
+            {
+                DeleteBuildingAtPoint(clickPoint);
+                return;
+            }
+
+            if (isDeletingMode && e.RightButton == MouseButtonState.Pressed)
+            {
+                CancelDeletingMode();
+                return;
+            }
+
+            if (isSelectingConveyorForBuilding && e.LeftButton == MouseButtonState.Pressed)
+            {
+                var conveyor = FindConveyorAtPoint(clickPoint);
+                if (conveyor != null)
+                    CompleteConveyorConnection(conveyor);
+                else
+                    ShowMessage("Кликните на конвейер!");
+                return;
+            }
+
+            if (e.RightButton == MouseButtonState.Pressed)
+            {
+                if (isSelectingConveyorForBuilding)
+                {
+                    CancelSelectConveyorForBuilding();
+                    return;
+                }
+
+                var building = FindBuildingAtPoint(clickPoint);
+                if (building != null)
+                {
+                    ShowConnectionContextMenu(building, e.GetPosition(this));
+                    return;
+                }
+
+                foreach (var smelter in smelters)
+                    if (smelter.IsBuilt && smelter.IsPointInside(clickPoint))
+                    { smelter.OpenInterface(); return; }
+
+                foreach (var miner in miners)
+                    if (miner.IsBuilt && miner.IsPointInside(clickPoint))
+                    { miner.OpenInterface(); return; }
+
+                foreach (var armsFactory in armsFactories)
+                    if (armsFactory.IsBuilt && armsFactory.IsPointInside(clickPoint))
+                    { armsFactory.OpenInterface(); return; }
+                return;
+            }
+
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                if (isBuildingLine)
+                {
+                    HandleLineModeClick(clickPoint);
+                    return;
+                }
+
+                if (isBuildingMode)
+                {
+                    HandleBuildingModeClick(clickPoint);
+                    return;
+                }
+            }
+        }
+
+        private void GameCanvas_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (isBuildingMode && buildingPreview != null)
+            {
+                var position = e.GetPosition(GameCanvas);
+                var snappedPosition = SnapToGrid(position);
+                var offset = GetBuildingCenterOffset(buildingToPlace);
+                var size = GetBuildingSize(buildingToPlace);
+
+                double buildingX = snappedPosition.X - offset.X;
+                double buildingY = snappedPosition.Y - offset.Y;
+                buildingX = Math.Floor(buildingX / GridSize) * GridSize;
+                buildingY = Math.Floor(buildingY / GridSize) * GridSize;
+
+                Canvas.SetLeft(buildingPreview, buildingX);
+                Canvas.SetTop(buildingPreview, buildingY);
+
+                bool isValidPosition = IsBuildingPlacementValid(buildingX, buildingY, buildingToPlace);
+
+                if (buildingToPlace == "miner" && isValidPosition)
+                {
+                    bool isOnResource = false;
+                    Rect minerRect = new Rect(buildingX, buildingY, size.Width, size.Height);
+                    foreach (var resource in resources)
+                    {
+                        Rect resourceRect = new Rect(resource.X, resource.Y, resource.Width, resource.Height);
+                        if (minerRect.IntersectsWith(resourceRect))
+                        {
+                            isOnResource = true;
+                            break;
+                        }
+                    }
+
+                    isValidPosition = isValidPosition && isOnResource;
+                    buildingPreview.Opacity = isOnResource ? 0.7 : 0.3;
+                    BuildHintText.Text = isOnResource ? "Кликните для постройки на этом ресурсе" : "Добытчик должен быть построен НА РЕСУРСЕ!";
+                }
+                else
+                {
+                    buildingPreview.Opacity = isValidPosition ? 0.7 : 0.3;
+                    BuildHintText.Text = isValidPosition ? buildingToPlace switch
+                    {
+                        "smelter" => "Кликните для постройки плавильни (10 камня + 5 угля)",
+                        "conveyor" => "Кликните для постройки конвейера (2 железных слитка)",
+                        "arms_factory" => "Кликните для постройки оружейного завода (15 камня + 10 жел.слитков + 10 мед.слитков)",
+                        "cannon" => "Кликните для постройки пушки (5 жел.слитков + 6 деталей + 3 патрона)",
+                        _ => "Кликните для постройки"
+                    } : "Нельзя построить здесь (занято, слишком далеко или вне границ)";
+                }
+            }
+            else if (isBuildingLine)
+            {
+                var position = e.GetPosition(GameCanvas);
+                var snappedPosition = SnapToGrid(position);
+                UpdateLinePreview(snappedPosition);
+            }
+            else if (isSelectingConveyorForBuilding)
+            {
+                var position = e.GetPosition(GameCanvas);
+                var conveyorAtCursor = FindConveyorAtPoint(position);
+
+                foreach (var conveyor in conveyors)
+                    conveyor.Sprite.Opacity = 1.0;
+
+                if (conveyorAtCursor != null)
+                {
+                    BuildHintText.Text = $"Конвейер выбран: ({conveyorAtCursor.X}, {conveyorAtCursor.Y})\n" +
+                                       $"Направление: {conveyorAtCursor.Direction}\n" +
+                                       "Кликните, чтобы соединить с зданием";
+                    conveyorAtCursor.Sprite.Opacity = 0.9;
+                }
+                else
+                {
+                    BuildHintText.Text = "Выберите конвейер для соединения с зданием";
+                }
+            }
+        }
+
+        private void HandleBuildingModeClick(Point clickPoint)
+        {
+            var offset = GetBuildingCenterOffset(buildingToPlace);
+            double buildingX = clickPoint.X - offset.X;
+            double buildingY = clickPoint.Y - offset.Y;
+            buildingX = Math.Floor(buildingX / GridSize) * GridSize;
+            buildingY = Math.Floor(buildingY / GridSize) * GridSize;
+
+            if (IsBuildingPlacementValid(buildingX, buildingY, buildingToPlace))
+            {
+                switch (buildingToPlace)
+                {
+                    case "smelter": BuildSmelter(buildingX, buildingY); break;
+                    case "miner": BuildMiner(buildingX, buildingY); break;
+                    case "conveyor": ShowDirectionSelectionMenu(buildingX, buildingY); break;
+                    case "arms_factory": BuildArmsFactory(buildingX, buildingY); break;
+                    case "cannon": BuildCannon(buildingX, buildingY); break;
+                }
+            }
+            else
+            {
+                ShowMessage("Нельзя построить здесь!");
+            }
+        }
+
+
+        private void ConnectMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is Tuple<object, bool> connectionInfo)
+            {
+                var building = connectionInfo.Item1;
+                var isInput = connectionInfo.Item2;
+                StartSelectConveyorForBuilding(building, isInput);
+            }
+        }
+
+        //Постройка
         private bool IsBuildingPlacementValid(double x, double y, string buildingType, bool checkDistance = true)
         {
             var size = GetBuildingSize(buildingType);
+
+            Rect playerRect = new Rect(player.X, player.Y, player.Width, player.Height);
+            Rect buildingRect = new Rect(x, y, size.Width, size.Height);
+
+            if (playerRect.IntersectsWith(buildingRect))
+            {
+                return false;
+            }
 
             if (checkDistance && buildingType != "conveyor")
             {
@@ -158,7 +429,7 @@ namespace Factorio
                     Math.Pow(playerCenterX - buildingCenterX, 2) +
                     Math.Pow(playerCenterY - buildingCenterY, 2));
 
-                if (distance > 300)
+                if (distance > 200)
                     return false;
             }
 
@@ -176,6 +447,14 @@ namespace Factorio
         private bool IsConveyorPlacementValid(double x, double y)
         {
             Point conveyorCenter = new Point(x + 15, y + 15);
+
+            Rect playerRect = new Rect(player.X, player.Y, player.Width, player.Height);
+            Rect conveyorRect = new Rect(x, y, 30, 30);
+
+            if (playerRect.IntersectsWith(conveyorRect))
+            {
+                return false; 
+            }
 
             foreach (var conveyor in conveyors)
             {
@@ -308,7 +587,7 @@ namespace Factorio
             }
 
             if (deltaX != 0 || deltaY != 0)
-                player.Move(deltaX, deltaY, direction);
+                player.Move(deltaX, deltaY, direction, miners, smelters, conveyors, armsFactories, cannons);
             else
                 player.Stop();
         }
@@ -321,9 +600,9 @@ namespace Factorio
             HealthBar.Maximum = player.MaxHealth;
             HealthText.Text = $"{player.Health}/{player.MaxHealth}";
 
-            if (player.Health <= 1)
+            if (player.Health <= 2)
                 HealthBar.Foreground = Brushes.Red;
-            else if (player.Health <= 2)
+            else if (player.Health <= 4)
                 HealthBar.Foreground = Brushes.Yellow;
             else
                 HealthBar.Foreground = Brushes.LimeGreen;
@@ -1075,269 +1354,6 @@ namespace Factorio
                 ResourceType.Stone => "камне",
                 _ => "ресурсе"
             };
-        }
-
-        //Ввод
-        private void Window_KeyDown(object sender, KeyEventArgs e)
-        {
-            switch (e.Key)
-            {
-                case Key.Escape:
-                    if (isDeletingMode)
-                        CancelDeletingMode();
-                    else if (isBuildingMode)
-                        CancelBuildingMode();
-                    else if (isSelectingConveyorForBuilding)
-                        CancelSelectConveyorForBuilding();
-                    else
-                        this.Close();
-                    break;
-                case Key.W: case Key.Up: isUpPressed = true; break;
-                case Key.S: case Key.Down: isDownPressed = true; break;
-                case Key.A: case Key.Left: isLeftPressed = true; break;
-                case Key.D: case Key.Right: isRightPressed = true; break;
-                case Key.Space: isMiningPressed = true; break;
-                case Key.R: SpawnRandomResource(); break;
-                case Key.I: ShowInventoryInfo(); break;
-
-                case Key.Tab:
-                    if (!isBuildingMode && !isBuildingLine && !isSelectingConveyorForBuilding)
-                        OpenBuildMenu();
-                    else
-                    {
-                        CancelBuildingMode();
-                        CancelLineMode();
-                        CancelSelectConveyorForBuilding();
-                    }
-                    e.Handled = true;
-                    break;
-
-                case Key.C:
-                    if (isBuildingMode) CancelBuildingMode();
-                    else if (isSelectingConveyorForBuilding) CancelSelectConveyorForBuilding();
-                    else ShowMessage("Используйте ПРАВЫЙ клик по зданию для соединения с конвейером");
-                    break;
-
-                case Key.T: CreateTestSetup(); break;
-                case Key.G: ToggleGrid(); break;
-
-                case Key.M:
-                    if (!isBuildingMode && !isBuildingLine && !isSelectingConveyorForBuilding)
-                        SpawnInsects();
-                    else
-                        ShowInventoryInfo();
-                    break;
-
-                case Key.E:
-                    if (Keyboard.Modifiers == ModifierKeys.Control)
-                        EmergencyCleanup();
-                    break;
-                case Key.Delete:
-                    if (!isDeletingMode)
-                        StartDeletingMode();
-                    else
-                        CancelDeletingMode();
-                    break;
-            }
-        }
-
-        private void Window_KeyUp(object sender, KeyEventArgs e)
-        {
-            switch (e.Key)
-            {
-                case Key.W: case Key.Up: isUpPressed = false; break;
-                case Key.S: case Key.Down: isDownPressed = false; break;
-                case Key.A: case Key.Left: isLeftPressed = false; break;
-                case Key.D: case Key.Right: isRightPressed = false; break;
-                case Key.Space: isMiningPressed = false; break;
-            }
-        }
-
-        private void GameCanvas_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            var position = e.GetPosition(GameCanvas);
-            var snappedPosition = SnapToGrid(position);
-            Point clickPoint = new Point(snappedPosition.X, snappedPosition.Y);
-
-            if (isDeletingMode && e.LeftButton == MouseButtonState.Pressed)
-            {
-                DeleteBuildingAtPoint(clickPoint);
-                return;
-            }
-
-            if (isDeletingMode && e.RightButton == MouseButtonState.Pressed)
-            {
-                CancelDeletingMode();
-                return;
-            }
-
-            if (isSelectingConveyorForBuilding && e.LeftButton == MouseButtonState.Pressed)
-            {
-                var conveyor = FindConveyorAtPoint(clickPoint);
-                if (conveyor != null)
-                    CompleteConveyorConnection(conveyor);
-                else
-                    ShowMessage("Кликните на конвейер!");
-                return;
-            }
-
-            if (e.RightButton == MouseButtonState.Pressed)
-            {
-                if (isSelectingConveyorForBuilding)
-                {
-                    CancelSelectConveyorForBuilding();
-                    return;
-                }
-
-                var building = FindBuildingAtPoint(clickPoint);
-                if (building != null)
-                {
-                    ShowConnectionContextMenu(building, e.GetPosition(this));
-                    return;
-                }
-
-                foreach (var smelter in smelters)
-                    if (smelter.IsBuilt && smelter.IsPointInside(clickPoint))
-                    { smelter.OpenInterface(); return; }
-
-                foreach (var miner in miners)
-                    if (miner.IsBuilt && miner.IsPointInside(clickPoint))
-                    { miner.OpenInterface(); return; }
-
-                foreach (var armsFactory in armsFactories)
-                    if (armsFactory.IsBuilt && armsFactory.IsPointInside(clickPoint))
-                    { armsFactory.OpenInterface(); return; }
-                return;
-            }
-
-            if (e.LeftButton == MouseButtonState.Pressed)
-            {
-                if (isBuildingLine)
-                {
-                    HandleLineModeClick(clickPoint);
-                    return;
-                }
-
-                if (isBuildingMode)
-                {
-                    HandleBuildingModeClick(clickPoint);
-                    return;
-                }
-            }
-        }
-
-        private void GameCanvas_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (isBuildingMode && buildingPreview != null)
-            {
-                var position = e.GetPosition(GameCanvas);
-                var snappedPosition = SnapToGrid(position);
-                var offset = GetBuildingCenterOffset(buildingToPlace);
-                var size = GetBuildingSize(buildingToPlace);
-
-                double buildingX = snappedPosition.X - offset.X;
-                double buildingY = snappedPosition.Y - offset.Y;
-                buildingX = Math.Floor(buildingX / GridSize) * GridSize;
-                buildingY = Math.Floor(buildingY / GridSize) * GridSize;
-
-                Canvas.SetLeft(buildingPreview, buildingX);
-                Canvas.SetTop(buildingPreview, buildingY);
-
-                bool isValidPosition = IsBuildingPlacementValid(buildingX, buildingY, buildingToPlace);
-
-                if (buildingToPlace == "miner" && isValidPosition)
-                {
-                    bool isOnResource = false;
-                    Rect minerRect = new Rect(buildingX, buildingY, size.Width, size.Height);
-                    foreach (var resource in resources)
-                    {
-                        Rect resourceRect = new Rect(resource.X, resource.Y, resource.Width, resource.Height);
-                        if (minerRect.IntersectsWith(resourceRect))
-                        {
-                            isOnResource = true;
-                            break;
-                        }
-                    }
-
-                    isValidPosition = isValidPosition && isOnResource;
-                    buildingPreview.Opacity = isOnResource ? 0.7 : 0.3;
-                    BuildHintText.Text = isOnResource ? "Кликните для постройки на этом ресурсе" : "Добытчик должен быть построен НА РЕСУРСЕ!";
-                }
-                else
-                {
-                    buildingPreview.Opacity = isValidPosition ? 0.7 : 0.3;
-                    BuildHintText.Text = isValidPosition ? buildingToPlace switch
-                    {
-                        "smelter" => "Кликните для постройки плавильни (10 камня + 5 угля)",
-                        "conveyor" => "Кликните для постройки конвейера (2 железных слитка)",
-                        "arms_factory" => "Кликните для постройки оружейного завода (15 камня + 10 жел.слитков + 10 мед.слитков)",
-                        "cannon" => "Кликните для постройки пушки (5 жел.слитков + 6 деталей + 3 патрона)",
-                        _ => "Кликните для постройки"
-                    } : "Нельзя построить здесь (занято, слишком далеко или вне границ)";
-                }
-            }
-            else if (isBuildingLine)
-            {
-                var position = e.GetPosition(GameCanvas);
-                var snappedPosition = SnapToGrid(position);
-                UpdateLinePreview(snappedPosition);
-            }
-            else if (isSelectingConveyorForBuilding)
-            {
-                var position = e.GetPosition(GameCanvas);
-                var conveyorAtCursor = FindConveyorAtPoint(position);
-
-                foreach (var conveyor in conveyors)
-                    conveyor.Sprite.Opacity = 1.0;
-
-                if (conveyorAtCursor != null)
-                {
-                    BuildHintText.Text = $"Конвейер выбран: ({conveyorAtCursor.X}, {conveyorAtCursor.Y})\n" +
-                                       $"Направление: {conveyorAtCursor.Direction}\n" +
-                                       "Кликните, чтобы соединить с зданием";
-                    conveyorAtCursor.Sprite.Opacity = 0.9;
-                }
-                else
-                {
-                    BuildHintText.Text = "Выберите конвейер для соединения с зданием";
-                }
-            }
-        }
-
-        private void HandleBuildingModeClick(Point clickPoint)
-        {
-            var offset = GetBuildingCenterOffset(buildingToPlace);
-            double buildingX = clickPoint.X - offset.X;
-            double buildingY = clickPoint.Y - offset.Y;
-            buildingX = Math.Floor(buildingX / GridSize) * GridSize;
-            buildingY = Math.Floor(buildingY / GridSize) * GridSize;
-
-            if (IsBuildingPlacementValid(buildingX, buildingY, buildingToPlace))
-            {
-                switch (buildingToPlace)
-                {
-                    case "smelter": BuildSmelter(buildingX, buildingY); break;
-                    case "miner": BuildMiner(buildingX, buildingY); break;
-                    case "conveyor": ShowDirectionSelectionMenu(buildingX, buildingY); break;
-                    case "arms_factory": BuildArmsFactory(buildingX, buildingY); break;
-                    case "cannon": BuildCannon(buildingX, buildingY); break;
-                }
-            }
-            else
-            {
-                ShowMessage("Нельзя построить здесь!");
-            }
-        }
-
-
-        private void ConnectMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem && menuItem.Tag is Tuple<object, bool> connectionInfo)
-            {
-                var building = connectionInfo.Item1;
-                var isInput = connectionInfo.Item2;
-                StartSelectConveyorForBuilding(building, isInput);
-            }
         }
 
         //Доп
