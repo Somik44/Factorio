@@ -8,13 +8,6 @@ using System.IO;
 
 namespace Factorio
 {
-    public class InventorySlot
-    {
-        public ResourceType Type { get; set; }
-        public int Count { get; set; }
-        public Image Icon { get; set; }
-        public TextBlock CountText { get; set; }
-    }
 
     public class Player
     {
