@@ -33,6 +33,11 @@ namespace Factorio
         private ProgressBar progressBar;
         private DispatcherTimer updateTimer;
 
+        public int Health { get; private set; }
+        public int MaxHealth { get; private set; } = 3;
+        public bool IsDestroyed => Health <= 0;
+
+
         //Инициализация
         public Smelter(double x, double y, Player player)
         {
@@ -42,6 +47,8 @@ namespace Factorio
             Height = 150;
             IsBuilt = false;
             this.player = player;
+
+            Health = MaxHealth;
 
             InitializeSprite();
             InitializeInventory();
@@ -793,6 +800,34 @@ namespace Factorio
         public int GetOutputCount()
         {
             return OutputSlot.Count;
+        }
+
+        //Урон
+        public void TakeDamage(int damage)
+        {
+            if (IsDestroyed || !IsBuilt) return;
+
+            Health -= damage;
+
+            Sprite.Opacity = 0.5 + (Health / (double)MaxHealth) * 0.5;
+
+            if (IsDestroyed)
+            {
+                Die();
+            }
+        }
+
+        private void Die()
+        {
+            IsBuilt = false;
+            smeltingTimer.Stop();
+            CloseInterface();
+            Sprite.Opacity = 0.3;
+        }
+
+        public Rect GetRect()
+        {
+            return new Rect(X, Y, Width, Height);
         }
     }
 }

@@ -3,12 +3,32 @@
   "WorkspaceRootPath": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|c:\\users\\\u043C\u0438\u0445\u0430\u0438\u043B\\desktop\\game\\factorio\\factorio\\factorio\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|solutionrelative:factorio\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|c:\\users\\\u043C\u0438\u0445\u0430\u0438\u043B\\desktop\\game\\factorio\\factorio\\factorio\\cannon.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|solutionrelative:factorio\\cannon.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|c:\\users\\\u043C\u0438\u0445\u0430\u0438\u043B\\desktop\\game\\factorio\\factorio\\factorio\\player.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|solutionrelative:factorio\\player.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|c:\\users\\\u043C\u0438\u0445\u0430\u0438\u043B\\desktop\\game\\factorio\\factorio\\factorio\\conveyor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|solutionrelative:factorio\\conveyor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|c:\\users\\\u043C\u0438\u0445\u0430\u0438\u043B\\desktop\\game\\factorio\\factorio\\factorio\\armsfactory.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|solutionrelative:factorio\\armsfactory.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|c:\\users\\\u043C\u0438\u0445\u0430\u0438\u043B\\desktop\\game\\factorio\\factorio\\factorio\\smelter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|solutionrelative:factorio\\smelter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|c:\\users\\\u043C\u0438\u0445\u0430\u0438\u043B\\desktop\\game\\factorio\\factorio\\factorio\\miner.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|solutionrelative:factorio\\miner.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|c:\\users\\\u043C\u0438\u0445\u0430\u0438\u043B\\desktop\\game\\factorio\\factorio\\factorio\\insect.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|solutionrelative:factorio\\insect.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|c:\\users\\\u043C\u0438\u0445\u0430\u0438\u043B\\desktop\\game\\factorio\\factorio\\factorio\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D0C3A1D4-A972-4850-9178-0978CDE9AA12}|Factorio\\Factorio.csproj|solutionrelative:factorio\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -26,26 +46,91 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "Player.cs",
-              "DocumentMoniker": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Player.cs",
-              "RelativeDocumentMoniker": "Factorio\\Player.cs",
-              "ToolTip": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Player.cs",
-              "RelativeToolTip": "Factorio\\Player.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAGwAAAAAAAAAAAAAAA==",
+              "DocumentIndex": 5,
+              "Title": "Insect.cs",
+              "DocumentMoniker": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Insect.cs",
+              "RelativeDocumentMoniker": "Factorio\\Insect.cs",
+              "ToolTip": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Insect.cs",
+              "RelativeToolTip": "Factorio\\Insect.cs",
+              "ViewState": "AgIAANUAAAAAAAAAAAAiwBYBAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-24T17:43:48.161Z",
+              "WhenOpened": "2025-12-24T19:33:13.923Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "Cannon.cs",
+              "DocumentMoniker": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Cannon.cs",
+              "RelativeDocumentMoniker": "Factorio\\Cannon.cs",
+              "ToolTip": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Cannon.cs",
+              "RelativeToolTip": "Factorio\\Cannon.cs",
+              "ViewState": "AgIAAAEAAAAAAAAAAAAuwB8AAAA2AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-24T19:32:39.874Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Conveyor.cs",
+              "DocumentMoniker": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Conveyor.cs",
+              "RelativeDocumentMoniker": "Factorio\\Conveyor.cs",
+              "ToolTip": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Conveyor.cs",
+              "RelativeToolTip": "Factorio\\Conveyor.cs",
+              "ViewState": "AgIAABEAAAAAAAAAAAAIwCkAAAAvAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-24T19:32:00.6Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "ArmsFactory.cs",
+              "DocumentMoniker": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\ArmsFactory.cs",
+              "RelativeDocumentMoniker": "Factorio\\ArmsFactory.cs",
+              "ToolTip": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\ArmsFactory.cs",
+              "RelativeToolTip": "Factorio\\ArmsFactory.cs",
+              "ViewState": "AgIAAAwAAAAAAAAAAAAAACEAAAAsAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-24T19:31:13.401Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Smelter.cs",
+              "DocumentMoniker": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Smelter.cs",
+              "RelativeDocumentMoniker": "Factorio\\Smelter.cs",
+              "ToolTip": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Smelter.cs",
+              "RelativeToolTip": "Factorio\\Smelter.cs",
+              "ViewState": "AgIAAAwAAAAAAAAAAAAAACMAAAAvAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-24T19:30:29.789Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Miner.cs",
+              "DocumentMoniker": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Miner.cs",
+              "RelativeDocumentMoniker": "Factorio\\Miner.cs",
+              "ToolTip": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\Miner.cs",
+              "RelativeToolTip": "Factorio\\Miner.cs",
+              "ViewState": "AgIAAA0AAAAAAAAAAAAQwCEAAAA2AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-24T19:29:43.407Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
               "Title": "MainWindow.xaml.cs",
               "DocumentMoniker": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\MainWindow.xaml.cs",
               "RelativeDocumentMoniker": "Factorio\\MainWindow.xaml.cs",
               "ToolTip": "C:\\Users\\\u041C\u0438\u0445\u0430\u0438\u043B\\Desktop\\Game\\Factorio\\Factorio\\Factorio\\MainWindow.xaml.cs",
               "RelativeToolTip": "Factorio\\MainWindow.xaml.cs",
-              "ViewState": "AgIAADACAAAAAAAAAIA5wFYCAAAsAAAAAAAAAA==",
+              "ViewState": "AgIAAHcAAAAAAAAAAAAgwMUAAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-12-13T10:24:24.057Z",
               "EditorCaption": ""

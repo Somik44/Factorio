@@ -117,6 +117,7 @@ namespace Factorio
             gameLoopTimer.Start();
         }
 
+        // В методе GameLoop_Tick добавляем проверку коллизий жуков со зданиями
         private void GameLoop_Tick(object sender, EventArgs e)
         {
             UpdatePlayerMovement();
@@ -128,6 +129,72 @@ namespace Factorio
 
             UpdateInsects();
             UpdatePlayerHealth();
+
+            // Добавляем эту часть: проверка коллизий жуков со зданиями
+            foreach (var insect in insects)
+            {
+                if (!insect.IsDead)
+                {
+                    insect.CheckBuildingCollisions(miners, smelters, armsFactories, conveyors, cannons);
+                }
+            }
+
+            // Добавляем удаление разрушенных зданий
+            RemoveDestroyedBuildings();
+        }
+
+        // Добавляем метод для удаления разрушенных зданий (добавить в конец класса)
+        private void RemoveDestroyedBuildings()
+        {
+            // Удаляем разрушенных добытчиков
+            for (int i = miners.Count - 1; i >= 0; i--)
+            {
+                if (miners[i].IsDestroyed)
+                {
+                    miners[i].RemoveFromCanvas(GameCanvas);
+                    miners.RemoveAt(i);
+                }
+            }
+
+            // Удаляем разрушенные плавильни
+            for (int i = smelters.Count - 1; i >= 0; i--)
+            {
+                if (smelters[i].IsDestroyed)
+                {
+                    smelters[i].RemoveFromCanvas(GameCanvas);
+                    smelters.RemoveAt(i);
+                }
+            }
+
+            // Удаляем разрушенные оружейные заводы
+            for (int i = armsFactories.Count - 1; i >= 0; i--)
+            {
+                if (armsFactories[i].IsDestroyed)
+                {
+                    armsFactories[i].RemoveFromCanvas(GameCanvas);
+                    armsFactories.RemoveAt(i);
+                }
+            }
+
+            // Удаляем разрушенные конвейеры
+            for (int i = conveyors.Count - 1; i >= 0; i--)
+            {
+                if (conveyors[i].IsDestroyed)
+                {
+                    conveyors[i].RemoveFromCanvas(GameCanvas);
+                    conveyors.RemoveAt(i);
+                }
+            }
+
+            // Удаляем разрушенные пушки
+            for (int i = cannons.Count - 1; i >= 0; i--)
+            {
+                if (cannons[i].IsDestroyed)
+                {
+                    cannons[i].RemoveFromCanvas(GameCanvas);
+                    cannons.RemoveAt(i);
+                }
+            }
         }
 
         private void UpdateInsects()

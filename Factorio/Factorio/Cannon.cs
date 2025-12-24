@@ -27,6 +27,12 @@ namespace Factorio
         private Canvas gameCanvas;
         private List<Ellipse> activeShots = new List<Ellipse>();
 
+
+        public int Health { get; private set; }
+        public int MaxHealth { get; private set; } = 4;
+        public bool IsDestroyed => Health <= 0;
+
+
         //Инициализация
         public Cannon(double x, double y)
         {
@@ -35,6 +41,8 @@ namespace Factorio
             Width = 60;
             Height = 60;
             IsBuilt = false;
+
+            Health = MaxHealth;
 
             InitializeSprite();
         }
@@ -333,6 +341,34 @@ namespace Factorio
         {
             return point.X >= X && point.X <= X + Width &&
                    point.Y >= Y && point.Y <= Y + Height;
+        }
+
+        //Урон
+        public void TakeDamage(int damage)
+        {
+            if (IsDestroyed || !IsBuilt) return;
+
+            Health -= damage;
+
+            Sprite.Opacity = 0.5 + (Health / (double)MaxHealth) * 0.5;
+
+            if (IsDestroyed)
+            {
+                Die();
+            }
+        }
+
+        private void Die()
+        {
+            IsBuilt = false;
+            shootTimer?.Stop();
+            shotAnimationTimer?.Stop();
+            Sprite.Opacity = 0.3;
+        }
+
+        public Rect GetRect()
+        {
+            return new Rect(X, Y, Width, Height);
         }
     }
 }

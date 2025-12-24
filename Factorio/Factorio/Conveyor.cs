@@ -37,12 +37,18 @@ namespace Factorio
 
         private ResourceType bufferedResource = ResourceType.None;
 
+        public int Health { get; private set; }
+        public int MaxHealth { get; private set; } = 1;
+        public bool IsDestroyed => Health <= 0;
+
         //Инициализация
         public Conveyor(double x, double y, Direction direction)
         {
             X = x;
             Y = y;
             Direction = direction;
+
+            Health = MaxHealth;
 
             InitializeSprite();
             InitializeAnimation();
@@ -397,6 +403,36 @@ namespace Factorio
                 case Direction.Up: return other.Y == Y - Height && other.X == X;
                 default: return false;
             }
+        }
+
+
+        //Урон
+        public void TakeDamage(int damage)
+        {
+            if (IsDestroyed || !IsBuilt) return;
+
+            Health -= damage;
+
+            Sprite.Opacity = 0.5 + (Health / (double)MaxHealth) * 0.5;
+
+            if (IsDestroyed)
+            {
+                Die();
+            }
+        }
+
+        private void Die()
+        {
+            IsBuilt = false;
+            animationTimer.Stop();
+            transportTimer.Stop();
+            Sprite.Opacity = 0.3;
+            resourceSprite.Visibility = Visibility.Collapsed;
+        }
+
+        public Rect GetRect()
+        {
+            return new Rect(X, Y, Width, Height);
         }
     }
 

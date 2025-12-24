@@ -27,6 +27,7 @@ namespace Factorio
         private Random random = new Random();
         private DateTime lastDamageTime = DateTime.MinValue;
 
+
         //Инициализация
         public Insect(double x, double y, Player targetPlayer)
         {
@@ -96,6 +97,71 @@ namespace Factorio
 
             UpdatePosition();
             CheckCollisionWithPlayer();
+        }
+
+        public void CheckBuildingCollisions(
+            List<Miner> miners,
+            List<Smelter> smelters,
+            List<ArmsFactory> armsFactories,
+            List<Conveyor> conveyors,
+            List<Cannon> cannons)
+        {
+            if (IsDead) return;
+
+            if ((DateTime.Now - lastDamageTime).TotalSeconds < 1.0)
+                return;
+
+            Rect insectRect = new Rect(X, Y, Width, Height);
+
+            foreach (var miner in miners)
+            {
+                if (miner.IsBuilt && !miner.IsDestroyed && insectRect.IntersectsWith(miner.GetRect()))
+                {
+                    miner.TakeDamage(1);
+                    lastDamageTime = DateTime.Now;
+                    return;
+                }
+            }
+
+            foreach (var smelter in smelters)
+            {
+                if (smelter.IsBuilt && !smelter.IsDestroyed && insectRect.IntersectsWith(smelter.GetRect()))
+                {
+                    smelter.TakeDamage(1);
+                    lastDamageTime = DateTime.Now;
+                    return;
+                }
+            }
+
+            foreach (var armsFactory in armsFactories)
+            {
+                if (armsFactory.IsBuilt && !armsFactory.IsDestroyed && insectRect.IntersectsWith(armsFactory.GetRect()))
+                {
+                    armsFactory.TakeDamage(1);
+                    lastDamageTime = DateTime.Now;
+                    return;
+                }
+            }
+
+            foreach (var conveyor in conveyors)
+            {
+                if (conveyor.IsBuilt && !conveyor.IsDestroyed && insectRect.IntersectsWith(conveyor.GetRect()))
+                {
+                    conveyor.TakeDamage(1);
+                    lastDamageTime = DateTime.Now;
+                    return;
+                }
+            }
+
+            foreach (var cannon in cannons)
+            {
+                if (cannon.IsBuilt && !cannon.IsDestroyed && insectRect.IntersectsWith(cannon.GetRect()))
+                {
+                    cannon.TakeDamage(1);
+                    lastDamageTime = DateTime.Now;
+                    return;
+                }
+            }
         }
 
         private void CheckCollisionWithPlayer()
@@ -218,5 +284,6 @@ namespace Factorio
                 canvas.Children.Remove(Sprite);
             }
         }
+
     }
 }

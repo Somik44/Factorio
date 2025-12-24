@@ -30,6 +30,10 @@ namespace Factorio
         private DispatcherTimer updateTimer;
         private Resource targetResource;
 
+        public int Health { get; private set; }
+        public int MaxHealth { get; private set; } = 2;
+        public bool IsDestroyed => Health <= 0;
+
         //Инициализация
         public Miner(double x, double y, Player player)
         {
@@ -41,6 +45,8 @@ namespace Factorio
             IsPlacedOnResource = false;
             MiningType = ResourceType.None;
             this.player = player;
+
+            Health = MaxHealth;
 
             InitializeSprite();
             InitializeInventory();
@@ -584,6 +590,36 @@ namespace Factorio
                 return true;
             }
             return false;
+        }
+
+
+
+        //урон
+        public void TakeDamage(int damage)
+        {
+            if (IsDestroyed || !IsBuilt) return;
+
+            Health -= damage;
+
+            Sprite.Opacity = 0.5 + (Health / (double)MaxHealth) * 0.5;
+
+            if (IsDestroyed)
+            {
+                Die();
+            }
+        }
+
+        private void Die()
+        {
+            IsBuilt = false;
+            miningTimer.Stop();
+            CloseInterface();
+            Sprite.Opacity = 0.3;
+        }
+
+        public Rect GetRect()
+        {
+            return new Rect(X, Y, Width, Height);
         }
     }
 }
