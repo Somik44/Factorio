@@ -27,6 +27,7 @@ namespace Factorio
         private Canvas gameCanvas;
         private List<Ellipse> activeShots = new List<Ellipse>();
 
+        //Инициализация
         public Cannon(double x, double y)
         {
             X = x;
@@ -110,7 +111,7 @@ namespace Factorio
             Sprite.Opacity = 1.0;
 
             shootTimer = new DispatcherTimer();
-            shootTimer.Interval = TimeSpan.FromSeconds(1); 
+            shootTimer.Interval = TimeSpan.FromSeconds(1);
             shootTimer.Tick += (s, e) => Shoot();
             shootTimer.Start();
 
@@ -118,7 +119,6 @@ namespace Factorio
             shotAnimationTimer.Interval = TimeSpan.FromMilliseconds(50);
             shotAnimationTimer.Start();
         }
-
         public void SetTargetInsects(List<Insect> insects)
         {
             targetInsects = insects;
@@ -129,6 +129,7 @@ namespace Factorio
             gameCanvas = canvas;
         }
 
+        //Стрельба
         private void Shoot()
         {
             if (targetInsects == null || targetInsects.Count == 0) return;
@@ -160,7 +161,6 @@ namespace Factorio
             if (nearestInsect != null)
             {
                 CreateShot(nearestInsect);
-
                 nearestInsect.TakeDamage(1);
             }
         }
@@ -192,10 +192,9 @@ namespace Factorio
 
             Canvas.SetLeft(shot, startX);
             Canvas.SetTop(shot, startY);
-            Canvas.SetZIndex(shot, 60); 
+            Canvas.SetZIndex(shot, 60);
 
             gameCanvas.Children.Add(shot);
-
             activeShots.Add(shot);
 
             AnimateShot(shot, startX, startY, targetX, targetY, target);
@@ -204,9 +203,9 @@ namespace Factorio
         private void AnimateShot(Ellipse shot, double startX, double startY, double targetX, double targetY, Insect target)
         {
             double progress = 0;
-            double duration = 0.5; // 0.5 секунды на полет
-            int steps = 25; // Количество шагов анимации
-            double stepTime = duration * 1000 / steps; // Время одного шага в мс
+            double duration = 0.5;
+            int steps = 25;
+            double stepTime = duration * 1000 / steps;
 
             DispatcherTimer animationTimer = new DispatcherTimer();
             animationTimer.Interval = TimeSpan.FromMilliseconds(stepTime);
@@ -217,13 +216,9 @@ namespace Factorio
 
                 if (progress >= 1.0 || target.IsDead)
                 {
-                    // Завершаем анимацию
                     animationTimer.Stop();
-
-                    // Создаем эффект попадания
                     CreateHitEffect(targetX, targetY);
 
-                    // Удаляем снаряд
                     if (gameCanvas.Children.Contains(shot))
                     {
                         gameCanvas.Children.Remove(shot);
@@ -232,7 +227,6 @@ namespace Factorio
                 }
                 else
                 {
-                    // Плавное движение с замедлением в конце (ease-out)
                     double easedProgress = 1 - Math.Pow(1 - progress, 2);
 
                     double currentX = startX + (targetX - startX) * easedProgress;
@@ -241,7 +235,6 @@ namespace Factorio
                     Canvas.SetLeft(shot, currentX);
                     Canvas.SetTop(shot, currentY);
 
-                    // Небольшое изменение размера для эффекта "дрожания"
                     shot.Width = 10 + Math.Sin(progress * Math.PI * 10) * 2;
                     shot.Height = 10 + Math.Cos(progress * Math.PI * 10) * 2;
                 }
@@ -250,11 +243,11 @@ namespace Factorio
             animationTimer.Start();
         }
 
+        //Анимация
         private void CreateHitEffect(double x, double y)
         {
             if (gameCanvas == null) return;
 
-            // Создаем эффект попадания (вспышка)
             Ellipse hitEffect = new Ellipse
             {
                 Width = 20,
@@ -275,7 +268,6 @@ namespace Factorio
 
             gameCanvas.Children.Add(hitEffect);
 
-            // Анимация исчезновения эффекта
             DispatcherTimer effectTimer = new DispatcherTimer();
             effectTimer.Interval = TimeSpan.FromMilliseconds(50);
             double effectProgress = 0;
@@ -303,7 +295,7 @@ namespace Factorio
             effectTimer.Start();
         }
 
-
+        //Доп
         private void UpdatePosition()
         {
             Canvas.SetLeft(Sprite, X);

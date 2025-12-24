@@ -19,9 +19,8 @@ namespace Factorio
         public Direction Direction { get; private set; }
         public bool IsBuilt { get; private set; }
 
-
         public object LinkedBuilding { get; set; }
-        public bool IsInputConveyor { get; set; } 
+        public bool IsInputConveyor { get; set; }
         public bool IsOutputConveyor { get; set; }
 
         private ResourceType currentResource = ResourceType.None;
@@ -39,7 +38,6 @@ namespace Factorio
         private ResourceType bufferedResource = ResourceType.None;
 
         //Инициализация
-
         public Conveyor(double x, double y, Direction direction)
         {
             X = x;
@@ -96,8 +94,7 @@ namespace Factorio
             };
         }
 
-        
-        //Главная логика
+        //Логика
         public void Build()
         {
             IsBuilt = true;
@@ -192,8 +189,7 @@ namespace Factorio
             resourceSprite.Visibility = Visibility.Collapsed;
         }
 
-
-        //Для зданий
+        //Взаимодействие с зданиями
         private void TryTakeFromBuilding()
         {
             if (LinkedBuilding is Miner miner && miner.OutputSlot.Count > 0)
@@ -277,8 +273,7 @@ namespace Factorio
             return false;
         }
 
-
-        //C другими конв
+        //С другими конвейерами
         private Conveyor FindNextConveyorInDirection()
         {
             double nextX = X;
@@ -315,9 +310,7 @@ namespace Factorio
             return result;
         }
 
-
-
-        //Визуал
+        //Визуализация
         private void UpdateResourcePosition()
         {
             double px = X;
@@ -387,8 +380,7 @@ namespace Factorio
             return File.Exists(path) ? new BitmapImage(new Uri(path)) : new BitmapImage();
         }
 
-
-        //для Main
+        //Доп
         public bool IsPointInside(Point point)
         {
             return point.X >= X && point.X <= X + Width &&
@@ -407,7 +399,6 @@ namespace Factorio
             }
         }
     }
-
 
     public static class GameCanvasHelper
     {

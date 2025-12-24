@@ -19,12 +19,13 @@ namespace Factorio
         private TextBlock amountText;
         public object Tag { get; set; }
 
+        //Инициализация
         public Resource(double x, double y, ResourceType type)
         {
             X = x;
             Y = y;
             Type = type;
-            Amount = int.MaxValue; 
+            Amount = int.MaxValue;
             Width = 30;
             Height = 30;
 
@@ -75,7 +76,6 @@ namespace Factorio
 
             using (var drawingContext = drawingVisual.RenderOpen())
             {
-                // Разные цвета для разных типов ресурсов
                 Brush color = type switch
                 {
                     ResourceType.Iron => Brushes.Gray,
@@ -127,12 +127,14 @@ namespace Factorio
             return bitmap;
         }
 
+        //Позиция
         public void UpdatePosition()
         {
             Canvas.SetLeft(Sprite, X);
             Canvas.SetTop(Sprite, Y);
         }
 
+        //доп
         public void AddToCanvas(Canvas canvas)
         {
             if (!canvas.Children.Contains(Sprite))
@@ -142,11 +144,13 @@ namespace Factorio
                 UpdatePosition();
             }
         }
+
         public void RemoveFromCanvas(Canvas canvas)
         {
             if (canvas.Children.Contains(Sprite))
                 canvas.Children.Remove(Sprite);
         }
+
 
         public void DecreaseAmount(int amount)
         {

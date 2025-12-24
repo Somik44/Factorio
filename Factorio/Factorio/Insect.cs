@@ -24,11 +24,10 @@ namespace Factorio
         private DispatcherTimer animationTimer;
         private int currentFrame = 1;
         private bool movingRight = false;
-        private int damageToPlayer = 0;
-        private const int PlayerMaxHealth = 4;
         private Random random = new Random();
         private DateTime lastDamageTime = DateTime.MinValue;
 
+        //Инициализация
         public Insect(double x, double y, Player targetPlayer)
         {
             X = x;
@@ -36,7 +35,7 @@ namespace Factorio
             Width = 40;
             Height = 40;
             Speed = 3;
-            Health = 2; // Нужно 2 попадания для уничтожения
+            Health = 2;
             IsDead = false;
             TargetPlayer = targetPlayer;
 
@@ -70,6 +69,7 @@ namespace Factorio
             animationTimer.Start();
         }
 
+        //Движение
         private void Move()
         {
             if (IsDead || TargetPlayer == null) return;
@@ -95,9 +95,9 @@ namespace Factorio
             Y += deltaY * Speed;
 
             UpdatePosition();
-
             CheckCollisionWithPlayer();
         }
+
         private void CheckCollisionWithPlayer()
         {
             if (IsDead || TargetPlayer == null) return;
@@ -107,12 +107,10 @@ namespace Factorio
 
             if (insectRect.IntersectsWith(playerRect))
             {
-                // Наносим урон игроку с задержкой (чтобы не убить мгновенно)
                 if ((DateTime.Now - lastDamageTime).TotalSeconds >= 1.0)
                 {
                     TargetPlayer.TakeDamage(1);
                     lastDamageTime = DateTime.Now;
-                    Console.WriteLine($"Игрок получил урон! Здоровье: {TargetPlayer.Health}/{TargetPlayer.MaxHealth}");
                 }
             }
         }
@@ -124,7 +122,6 @@ namespace Factorio
             string basePath = @"C:\Users\Михаил\Desktop\Game\Factorio\Factorio\textures\npc\";
             string direction = movingRight ? "right" : "left";
 
-            // Переключаем кадры анимации (1 или 2)
             currentFrame = currentFrame == 1 ? 2 : 1;
             string fileName = $"{direction}_{currentFrame}.png";
             string filePath = Path.Combine(basePath, fileName);
@@ -135,7 +132,6 @@ namespace Factorio
             }
             else
             {
-                // Заглушка, если файл не найден
                 Sprite.Source = CreatePlaceholderSprite();
             }
         }
@@ -180,6 +176,7 @@ namespace Factorio
             return bitmap;
         }
 
+        //Урон
         public void TakeDamage(int damage = 1)
         {
             Health -= damage;
@@ -197,6 +194,7 @@ namespace Factorio
             Sprite.Visibility = Visibility.Collapsed;
         }
 
+        //Доп
         private void UpdatePosition()
         {
             Canvas.SetLeft(Sprite, X);

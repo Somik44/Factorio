@@ -22,7 +22,6 @@ namespace Factorio
         public ResourceType MiningType { get; private set; }
         public Window InterfaceWindow { get; private set; }
 
-        // Слот для хранения добытых ресурсов
         public InventorySlot OutputSlot { get; private set; }
 
         private DispatcherTimer miningTimer;
@@ -31,6 +30,7 @@ namespace Factorio
         private DispatcherTimer updateTimer;
         private Resource targetResource;
 
+        //Инициализация
         public Miner(double x, double y, Player player)
         {
             X = x;
@@ -59,7 +59,6 @@ namespace Factorio
             };
 
             Sprite.MouseDown += OnMinerClicked;
-
             UpdatePosition();
         }
 
@@ -73,7 +72,6 @@ namespace Factorio
                 return new BitmapImage(new Uri(filePath));
             }
 
-            // Если файл не найден, создаем простую текстовую заглушку
             return CreateSimplePlaceholder();
         }
 
@@ -130,7 +128,6 @@ namespace Factorio
         {
             if (IsPlacedOnResource && IsBuilt && OutputSlot.Count < 99)
             {
-                // Добавляем ресурс в слот добытчика
                 if (OutputSlot.Type == ResourceType.None)
                 {
                     OutputSlot.Type = MiningType;
@@ -145,14 +142,13 @@ namespace Factorio
             }
         }
 
+        //Постройка
         public bool CheckPlacementOnResource(List<Resource> resources, double minDistance = 100)
         {
-            // Проверяем, стоит ли добытчик на ресурсе и нет ли других ресурсов слишком близко
             foreach (var resource in resources)
             {
                 double distance = Math.Sqrt(Math.Pow(resource.X - X, 2) + Math.Pow(resource.Y - Y, 2));
 
-                // Если добытчик стоит на ресурсе (расстояние < 40px)
                 if (distance < 40)
                 {
                     IsPlacedOnResource = true;
@@ -162,7 +158,6 @@ namespace Factorio
                     return true;
                 }
 
-                // Проверяем, нет ли других ресурсов слишком близко
                 if (distance < minDistance)
                 {
                     return false;
@@ -182,6 +177,7 @@ namespace Factorio
             miningTimer.Start();
         }
 
+        //Интерфейс
         private void OnMinerClicked(object sender, MouseButtonEventArgs e)
         {
             if (e.RightButton == MouseButtonState.Pressed && IsBuilt)
@@ -202,7 +198,7 @@ namespace Factorio
             {
                 Title = "Добытчик",
                 Width = 300,
-                Height = 200,
+                Height = 250,
                 WindowStyle = WindowStyle.ToolWindow,
                 ResizeMode = ResizeMode.NoResize,
                 Topmost = true
@@ -212,7 +208,6 @@ namespace Factorio
             mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-            // Информация о добытчике
             var infoPanel = new StackPanel
             {
                 Margin = new Thickness(10),
@@ -227,20 +222,11 @@ namespace Factorio
                 Margin = new Thickness(0, 5, 0, 5)
             };
 
-            var statusText = new TextBlock
-            {
-                Text = IsPlacedOnResource ? "✓ Работает (на ресурсе)" : "✗ Остановлен (нет ресурса)",
-                Foreground = IsPlacedOnResource ? Brushes.LightGreen : Brushes.Red,
-                FontSize = 12,
-                Margin = new Thickness(0, 5, 0, 5)
-            };
 
             infoPanel.Children.Add(typeText);
-            infoPanel.Children.Add(statusText);
             Grid.SetRow(infoPanel, 0);
             mainGrid.Children.Add(infoPanel);
 
-            // Слот для результата
             outputBorder = CreateSlotBorder("Добыча", "Добытые ресурсы");
             outputBorder.MouseDown += (s, e) => HandleSlotClick(OutputSlot, e);
             outputBorder.HorizontalAlignment = HorizontalAlignment.Center;
@@ -248,7 +234,6 @@ namespace Factorio
             Grid.SetRow(outputBorder, 0);
             mainGrid.Children.Add(outputBorder);
 
-            // Панель управления
             var controlPanel = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
@@ -259,7 +244,6 @@ namespace Factorio
             Grid.SetRow(controlPanel, 1);
             mainGrid.Children.Add(controlPanel);
 
-            // Кнопка "Забрать все"
             var takeAllButton = new Button
             {
                 Content = "Забрать всё",
@@ -271,7 +255,6 @@ namespace Factorio
             takeAllButton.Click += (s, e) => TakeAllResources();
             controlPanel.Children.Add(takeAllButton);
 
-            // Таймер для обновления интерфейса
             updateTimer = new DispatcherTimer();
             updateTimer.Interval = TimeSpan.FromMilliseconds(100);
             updateTimer.Tick += UpdateTimer_Tick;
@@ -285,7 +268,6 @@ namespace Factorio
 
             InterfaceWindow.Content = mainGrid;
             InterfaceWindow.Show();
-
             UpdateInterface();
         }
 
@@ -301,11 +283,6 @@ namespace Factorio
                 ResourceType.CopperIngot => "Медный слиток",
                 _ => "Нет"
             };
-        }
-
-        private void UpdateTimer_Tick(object sender, EventArgs e)
-        {
-            UpdateSlotDisplay(outputBorder, OutputSlot);
         }
 
         private Border CreateSlotBorder(string title, string tooltip)
@@ -335,20 +312,18 @@ namespace Factorio
             stackPanel.Children.Add(titleText);
 
             border.Child = stackPanel;
-
             return border;
         }
 
+        //Ресурсы
         private void HandleSlotClick(InventorySlot slot, MouseButtonEventArgs e)
         {
             if (e.LeftButton == MouseButtonState.Pressed)
             {
-                // Левый клик - положить ресурс (не доступно для добытчика)
                 return;
             }
             else if (e.RightButton == MouseButtonState.Pressed)
             {
-                // Правый клик - забрать ресурс
                 TakeResourceFromSlot(slot);
             }
         }
@@ -362,7 +337,6 @@ namespace Factorio
 
             int amount = 1;
 
-            // Забираем ресурс из слота
             if (player.AddResource(slot.Type, amount))
             {
                 slot.Count -= amount;
@@ -392,7 +366,6 @@ namespace Factorio
             if (slot.Type == ResourceType.None || slot.Count <= 0)
                 return;
 
-            // Пытаемся забрать все
             int amount = slot.Count;
             while (amount > 0)
             {
@@ -403,7 +376,7 @@ namespace Factorio
                 }
                 else
                 {
-                    break; // Нет места в инвентаре
+                    break;
                 }
             }
 
@@ -414,11 +387,16 @@ namespace Factorio
             }
         }
 
+        //Отображение
+        private void UpdateTimer_Tick(object sender, EventArgs e)
+        {
+            UpdateSlotDisplay(outputBorder, OutputSlot);
+        }
+
         private void UpdateSlotDisplay(Border border, InventorySlot slot)
         {
             if (border?.Child is StackPanel stackPanel)
             {
-                // Оставляем заголовок, обновляем содержимое
                 if (stackPanel.Children.Count > 1)
                 {
                     stackPanel.Children.RemoveAt(1);
@@ -473,7 +451,6 @@ namespace Factorio
                 return new BitmapImage(new Uri(filePath));
             }
 
-            // Если файл не найден, создаем простую текстовую иконку
             return CreateSimpleResourceIcon(type);
         }
 
@@ -526,6 +503,7 @@ namespace Factorio
             }
         }
 
+        //Предметы
         public int GetOutputCount()
         {
             return OutputSlot.Count;
@@ -536,6 +514,12 @@ namespace Factorio
             return OutputSlot.Type;
         }
 
+        public InventorySlot GetOutputSlot()
+        {
+            return OutputSlot;
+        }
+
+        //Размещени
         private void UpdatePosition()
         {
             Canvas.SetLeft(Sprite, X);
@@ -575,7 +559,6 @@ namespace Factorio
             }
         }
 
-        // Добавьте в класс Miner
         public bool IsPointInside(Point point)
         {
             return point.X >= X && point.X <= X + Width &&
@@ -597,12 +580,5 @@ namespace Factorio
             }
             return false;
         }
-
-        // В класс Miner добавьте этот метод:
-        public InventorySlot GetOutputSlot()
-        {
-            return OutputSlot;
-        }
-
     }
 }

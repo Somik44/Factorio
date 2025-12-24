@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -8,7 +8,6 @@ using System.IO;
 
 namespace Factorio
 {
-
     public class Player
     {
         public Image Sprite { get; private set; }
@@ -31,11 +30,11 @@ namespace Factorio
         private bool isMining = false;
         private List<Smelter> smelters = new List<Smelter>();
 
-        //для урона
         public int Health { get; private set; }
         public int MaxHealth { get; private set; }
         public bool IsDead => Health <= 0;
 
+        //Инициализация
         public Player(double startX, double startY, double width, double height)
         {
             X = startX;
@@ -54,30 +53,6 @@ namespace Factorio
             LoadAnimations();
         }
 
-        public void SetSmelters(List<Smelter> smeltersList)
-        {
-            smelters = smeltersList;
-        }
-
-
-        public void TakeDamage(int damage)
-        {
-            if (IsDead) return;
-
-            Health -= damage;
-            Health = Math.Max(0, Health);
-
-            if (IsDead)
-            {
-                Die();
-            }
-        }
-
-        private void Die()
-        {
-            Stop();
-            Sprite.Opacity = 0.5;
-        }
 
         private void InitializeInventory()
         {
@@ -104,6 +79,463 @@ namespace Factorio
             };
             UpdatePosition();
         }
+
+        //Здоровье
+        public void TakeDamage(int damage)
+        {
+            if (IsDead) return;
+
+            Health -= damage;
+            Health = Math.Max(0, Health);
+
+            if (IsDead)
+            {
+                Die();
+            }
+        }
+
+        private void Die()
+        {
+            Stop();
+            Sprite.Opacity = 0.5;
+        }
+
+
+        //Движение
+        public void Move(double deltaX, double deltaY, Direction direction, List<Miner> miners = null)
+        {
+            IsMoving = true;
+            CurrentDirection = direction;
+
+            double newX = X + deltaX * Speed;
+            double newY = Y + deltaY * Speed;
+
+            X = newX;
+            Y = newY;
+
+            X = Math.Max(0, Math.Min(X, SystemParameters.PrimaryScreenWidth - Width));
+            Y = Math.Max(0, Math.Min(Y, SystemParameters.PrimaryScreenHeight - Height));
+
+            UpdatePosition();
+        }
+
+        public void Stop()
+        {
+            IsMoving = false;
+            currentFrame = 0;
+        }
+
+        public void UpdateAnimation()
+        {
+            if (IsMoving && animations.ContainsKey(CurrentDirection) && animations[CurrentDirection].Count > 0)
+            {
+                if ((DateTime.Now - lastFrameTime).TotalMilliseconds >= animationSpeed)
+                {
+                    currentFrame = (currentFrame == 0 || currentFrame == 1) ? 2 : 1;
+                    lastFrameTime = DateTime.Now;
+                }
+                Sprite.Source = animations[CurrentDirection][currentFrame];
+            }
+            else if (animations.ContainsKey(CurrentDirection) && animations[CurrentDirection].Count > 0)
+            {
+                currentFrame = 0;
+                Sprite.Source = animations[CurrentDirection][0];
+            }
+        }
+
+        //Добыча
+        public void UpdateMining(List<Resource> resources, bool isMiningButtonPressed)
+        {
+            if (!isMiningButtonPressed)
+            {
+                isMining = false;
+                currentMiningResource = null;
+                miningProgress = 0;
+                return;
+            }
+
+            Resource nearestResource = FindNearestResourceInRange(resources, 50);
+
+            if (nearestResource != null)
+            {
+                if (currentMiningResource != nearestResource)
+                {
+                    currentMiningResource = nearestResource;
+                    miningProgress = 0;
+                    isMining = true;
+                }
+
+                if (isMining)
+                {
+                    miningProgress += 0.016;
+
+                    if (miningProgress >= miningTime)
+                    {
+                        if (AddToInventory(currentMiningResource.Type))
+                        {
+                            currentMiningResource.DecreaseAmount(1);
+                            if (currentMiningResource.Amount <= 0)
+                            {
+                                currentMiningResource = null;
+                            }
+                        }
+                        miningProgress = 0;
+                    }
+                }
+            }
+            else
+            {
+                isMining = false;
+                currentMiningResource = null;
+                miningProgress = 0;
+            }
+        }
+
+        private Resource FindNearestResourceInRange(List<Resource> resources, double range)
+        {
+            Resource nearest = null;
+            double nearestDistance = double.MaxValue;
+
+            foreach (var resource in resources)
+            {
+                if (resource.Amount > 0)
+                {
+                    double distance = Math.Sqrt(Math.Pow(resource.X - X, 2) + Math.Pow(resource.Y - Y, 2));
+                    if (distance < range && distance < nearestDistance)
+                    {
+                        nearestDistance = distance;
+                        nearest = resource;
+                    }
+                }
+            }
+
+            return nearest;
+        }
+
+        public double GetMiningProgress()
+        {
+            return miningProgress / miningTime;
+        }
+
+        //Инвентарь
+        public bool AddToInventory(ResourceType type)
+        {
+            for (int i = 0; i < Inventory.Length; i++)
+            {
+                if (Inventory[i].Type == type && Inventory[i].Count < 99)
+                {
+                    Inventory[i].Count++;
+                    UpdateInventorySlot(i);
+                    return true;
+                }
+            }
+
+            for (int i = 0; i < Inventory.Length; i++)
+            {
+                if (Inventory[i].Type == ResourceType.None)
+                {
+                    Inventory[i].Type = type;
+                    Inventory[i].Count = 1;
+                    UpdateInventorySlot(i);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public bool AddResource(ResourceType type, int amount = 1)
+        {
+            bool success = true;
+            for (int i = 0; i < amount; i++)
+            {
+                if (!AddToInventory(type))
+                {
+                    success = false;
+                    break;
+                }
+            }
+            return success;
+        }
+
+        public void UpdateInventorySlot(int slotIndex)
+        {
+            if (inventoryPanel == null || slotIndex < 0 || slotIndex >= 5) return;
+
+            var slotBorder = inventoryPanel.Children[slotIndex] as Border;
+            if (slotBorder == null) return;
+
+            var slot = Inventory[slotIndex];
+            slotBorder.Child = null;
+
+            if (slot.Type != ResourceType.None)
+            {
+                var stackPanel = new StackPanel();
+                string basePath = @"C:\Users\Михаил\Desktop\Game\Factorio\Factorio\textures\Resources\";
+
+                string filePath;
+                switch (slot.Type)
+                {
+                    case ResourceType.Iron:
+                        filePath = Path.Combine(basePath, "iron.png");
+                        break;
+                    case ResourceType.Copper:
+                        filePath = Path.Combine(basePath, "copper.png");
+                        break;
+                    case ResourceType.Coal:
+                        filePath = Path.Combine(basePath, "coal.png");
+                        break;
+                    case ResourceType.Stone:
+                        filePath = Path.Combine(basePath, "stone.png");
+                        break;
+                    case ResourceType.IronIngot:
+                        filePath = Path.Combine(basePath, "iron_ingot.png");
+                        break;
+                    case ResourceType.CopperIngot:
+                        filePath = Path.Combine(basePath, "copper_ingot.png");
+                        break;
+                    case ResourceType.Ammo:
+                        filePath = Path.Combine(basePath, "ammo.png");
+                        break;
+                    case ResourceType.Gears:
+                        filePath = Path.Combine(basePath, "gears.png");
+                        break;
+                    default:
+                        filePath = Path.Combine(basePath, "default.png");
+                        break;
+                }
+
+                Image icon = new Image
+                {
+                    Width = 40,
+                    Height = 40,
+                    Stretch = Stretch.Uniform
+                };
+
+                if (File.Exists(filePath))
+                {
+                    icon.Source = new BitmapImage(new Uri(filePath));
+                }
+                else
+                {
+                    icon.Source = CreateSimpleIcon(slot.Type);
+                }
+
+                TextBlock countText = new TextBlock
+                {
+                    Text = slot.Count.ToString(),
+                    Foreground = Brushes.White,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    FontWeight = FontWeights.Bold,
+                    FontSize = 14
+                };
+
+                stackPanel.Children.Add(icon);
+                stackPanel.Children.Add(countText);
+                slotBorder.Child = stackPanel;
+            }
+        }
+
+        private BitmapImage CreateSimpleIcon(ResourceType type)
+        {
+            var renderTarget = new RenderTargetBitmap(40, 40, 96, 96, PixelFormats.Pbgra32);
+            var drawingVisual = new DrawingVisual();
+
+            using (var drawingContext = drawingVisual.RenderOpen())
+            {
+                drawingContext.DrawRectangle(Brushes.Gray, null, new Rect(0, 0, 40, 40));
+                drawingContext.DrawRectangle(Brushes.Black, new Pen(Brushes.Black, 2), new Rect(0, 0, 40, 40));
+
+                string text = type switch
+                {
+                    ResourceType.Ammo => "AM",
+                    ResourceType.Gears => "GE",
+                    _ => type.ToString().Substring(0, 2)
+                };
+                var formattedText = new FormattedText(
+                    text,
+                    System.Globalization.CultureInfo.CurrentCulture,
+                    FlowDirection.LeftToRight,
+                    new Typeface("Arial"),
+                    16,
+                    Brushes.White,
+                    1.0);
+
+                drawingContext.DrawText(formattedText, new Point(10, 10));
+            }
+
+            renderTarget.Render(drawingVisual);
+            var bitmap = new BitmapImage();
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(renderTarget));
+
+            using (var stream = new MemoryStream())
+            {
+                encoder.Save(stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                bitmap.BeginInit();
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.StreamSource = stream;
+                bitmap.EndInit();
+            }
+
+            return bitmap;
+        }
+
+        public void SetInventoryPanel(StackPanel panel)
+        {
+            inventoryPanel = panel;
+            for (int i = 0; i < 5; i++)
+            {
+                UpdateInventorySlot(i);
+            }
+        }
+
+        //Ресурсы
+        public bool HasResources(ResourceType type, int amount)
+        {
+            int total = 0;
+            foreach (var slot in Inventory)
+            {
+                if (slot.Type == type)
+                {
+                    total += slot.Count;
+                }
+            }
+            return total >= amount;
+        }
+
+        public int GetResourceCount(ResourceType type)
+        {
+            int total = 0;
+            foreach (var slot in Inventory)
+            {
+                if (slot.Type == type)
+                {
+                    total += slot.Count;
+                }
+            }
+            return total;
+        }
+
+        public bool RemoveResources(ResourceType type, int amount)
+        {
+            int remaining = amount;
+
+            for (int i = 0; i < Inventory.Length && remaining > 0; i++)
+            {
+                if (Inventory[i].Type == type)
+                {
+                    int removeAmount = Math.Min(Inventory[i].Count, remaining);
+                    Inventory[i].Count -= removeAmount;
+                    remaining -= removeAmount;
+
+                    if (Inventory[i].Count <= 0)
+                    {
+                        Inventory[i].Type = ResourceType.None;
+                        Inventory[i].Count = 0;
+                    }
+
+                    UpdateInventorySlot(i);
+                }
+            }
+
+            return remaining == 0;
+        }
+
+        //Размещение
+        public bool CanBuildMiner()
+        {
+            return HasResources(ResourceType.IronIngot, 5) && HasResources(ResourceType.CopperIngot, 5);
+        }
+
+        public bool RemoveMinerResources()
+        {
+            bool ironRemoved = RemoveResources(ResourceType.IronIngot, 5);
+            bool copperRemoved = RemoveResources(ResourceType.CopperIngot, 5);
+            return ironRemoved && copperRemoved;
+        }
+
+        public bool CanBuildArmsFactory()
+        {
+            return HasResources(ResourceType.Stone, 15) && HasResources(ResourceType.IronIngot, 10) && HasResources(ResourceType.CopperIngot, 10);
+        }
+
+        public bool RemoveArmsFactoryResources()
+        {
+            bool stoneRemoved = RemoveResources(ResourceType.Stone, 15);
+            bool ironRemoved = RemoveResources(ResourceType.IronIngot, 10);
+            bool copperRemoved = RemoveResources(ResourceType.CopperIngot, 10);
+            return stoneRemoved && ironRemoved && copperRemoved;
+        }
+
+        public bool CanBuildSmelter()
+        {
+            return HasResources(ResourceType.Stone, 10) && HasResources(ResourceType.Coal, 5);
+        }
+
+        public bool RemoveBuildingResources()
+        {
+            bool stoneRemoved = RemoveResources(ResourceType.Stone, 10);
+            bool coalRemoved = RemoveResources(ResourceType.Coal, 5);
+            return stoneRemoved && coalRemoved;
+        }
+
+        public bool CanPlaceBuilding(double buildingX, double buildingY, double buildingWidth, double buildingHeight)
+        {
+            double playerCenterX = X + Width / 2;
+            double playerCenterY = Y + Height / 2;
+            double buildingCenterX = buildingX + buildingWidth / 2;
+            double buildingCenterY = buildingY + buildingHeight / 2;
+
+            double distance = Math.Sqrt(
+                Math.Pow(playerCenterX - buildingCenterX, 2) +
+                Math.Pow(playerCenterY - buildingCenterY, 2));
+
+            if (distance < 50)
+            {
+                return false;
+            }
+
+            bool collisionWithPlayer = buildingX < X + Width &&
+                                       buildingX + buildingWidth > X &&
+                                       buildingY < Y + Height &&
+                                       buildingY + buildingHeight > Y;
+
+            return !collisionWithPlayer;
+        }
+
+        //Доп
+        private void UpdatePosition()
+        {
+            Canvas.SetLeft(Sprite, X);
+            Canvas.SetTop(Sprite, Y);
+        }
+
+        public void AddToCanvas(Canvas canvas)
+        {
+            if (!canvas.Children.Contains(Sprite))
+            {
+                canvas.Children.Add(Sprite);
+                Canvas.SetZIndex(Sprite, 100);
+                UpdatePosition();
+            }
+        }
+
+        public void RemoveFromCanvas(Canvas canvas)
+        {
+            if (canvas.Children.Contains(Sprite))
+            {
+                canvas.Children.Remove(Sprite);
+            }
+        }
+
+        public void SetSmelters(List<Smelter> smeltersList)
+        {
+            smelters = smeltersList;
+        }
+
+        //Анимации
         private void LoadAnimations()
         {
             animations = new Dictionary<Direction, List<BitmapImage>>();
@@ -192,441 +624,6 @@ namespace Factorio
             }
 
             return bitmap;
-        }
-
-        // В класс Player добавим методы для проверки ресурсов для добытчика
-        public bool CanBuildMiner()
-        {
-            return HasResources(ResourceType.IronIngot, 5) && HasResources(ResourceType.CopperIngot, 5);
-        }
-
-        public bool RemoveMinerResources()
-        {
-            bool ironRemoved = RemoveResources(ResourceType.IronIngot, 5);
-            bool copperRemoved = RemoveResources(ResourceType.CopperIngot, 5);
-            return ironRemoved && copperRemoved;
-        }
-
-        // Методы для проверки ресурсов для оружейного завода
-        public bool CanBuildArmsFactory()
-        {
-            return HasResources(ResourceType.Stone, 15) && HasResources(ResourceType.IronIngot, 10) && HasResources(ResourceType.CopperIngot, 10);
-        }
-
-        public bool RemoveArmsFactoryResources()
-        {
-            bool stoneRemoved = RemoveResources(ResourceType.Stone, 15);
-            bool ironRemoved = RemoveResources(ResourceType.IronIngot, 10);
-            bool copperRemoved = RemoveResources(ResourceType.CopperIngot, 10);
-            return stoneRemoved && ironRemoved && copperRemoved;
-        }
-
-
-
-        // Обновим метод Move для проверки коллизий с добытчиками
-        public void Move(double deltaX, double deltaY, Direction direction, List<Miner> miners = null)
-        {
-            IsMoving = true;
-            CurrentDirection = direction;
-
-            double newX = X + deltaX * Speed;
-            double newY = Y + deltaY * Speed;
-
-            X = newX;
-            Y = newY;
-
-            X = Math.Max(0, Math.Min(X, SystemParameters.PrimaryScreenWidth - Width));
-            Y = Math.Max(0, Math.Min(Y, SystemParameters.PrimaryScreenHeight - Height));
-
-            UpdatePosition();
-        }
-
-        public void Stop()
-        {
-            IsMoving = false;
-            currentFrame = 0;
-        }
-
-        public void UpdateAnimation()
-        {
-            if (IsMoving && animations.ContainsKey(CurrentDirection) && animations[CurrentDirection].Count > 0)
-            {
-                if ((DateTime.Now - lastFrameTime).TotalMilliseconds >= animationSpeed)
-                {
-                    currentFrame = (currentFrame == 0 || currentFrame == 1) ? 2 : 1;
-                    lastFrameTime = DateTime.Now;
-                }
-                Sprite.Source = animations[CurrentDirection][currentFrame];
-            }
-            else if (animations.ContainsKey(CurrentDirection) && animations[CurrentDirection].Count > 0)
-            {
-                currentFrame = 0;
-                Sprite.Source = animations[CurrentDirection][0];
-            }
-        }
-
-        public void UpdateMining(List<Resource> resources, bool isMiningButtonPressed)
-        {
-            if (!isMiningButtonPressed)
-            {
-                isMining = false;
-                currentMiningResource = null;
-                miningProgress = 0;
-                return;
-            }
-
-            Resource nearestResource = FindNearestResourceInRange(resources, 50);
-
-            if (nearestResource != null)
-            {
-                if (currentMiningResource != nearestResource)
-                {
-                    currentMiningResource = nearestResource;
-                    miningProgress = 0;
-                    isMining = true;
-                }
-
-                if (isMining)
-                {
-                    miningProgress += 0.016;
-
-                    if (miningProgress >= miningTime)
-                    {
-                        if (AddToInventory(currentMiningResource.Type))
-                        {
-                            currentMiningResource.DecreaseAmount(1);
-                            if (currentMiningResource.Amount <= 0)
-                            {
-                                currentMiningResource = null;
-                            }
-                        }
-                        miningProgress = 0;
-                    }
-                }
-            }
-            else
-            {
-                isMining = false;
-                currentMiningResource = null;
-                miningProgress = 0;
-            }
-        }
-
-        private Resource FindNearestResourceInRange(List<Resource> resources, double range)
-        {
-            Resource nearest = null;
-            double nearestDistance = double.MaxValue;
-
-            foreach (var resource in resources)
-            {
-                if (resource.Amount > 0)
-                {
-                    double distance = Math.Sqrt(Math.Pow(resource.X - X, 2) + Math.Pow(resource.Y - Y, 2));
-                    if (distance < range && distance < nearestDistance)
-                    {
-                        nearestDistance = distance;
-                        nearest = resource;
-                    }
-                }
-            }
-
-            return nearest;
-        }
-
-        public double GetMiningProgress()
-        {
-            return miningProgress / miningTime;
-        }
-
-        private void UpdatePosition()
-        {
-            Canvas.SetLeft(Sprite, X);
-            Canvas.SetTop(Sprite, Y);
-        }
-
-        public void AddToCanvas(Canvas canvas)
-        {
-            if (!canvas.Children.Contains(Sprite))
-            {
-                canvas.Children.Add(Sprite);
-                Canvas.SetZIndex(Sprite, 100);
-                UpdatePosition();
-            }
-        }
-
-        public void RemoveFromCanvas(Canvas canvas)
-        {
-            if (canvas.Children.Contains(Sprite))
-            {
-                canvas.Children.Remove(Sprite);
-            }
-        }
-
-        public bool AddToInventory(ResourceType type)
-        {
-            for (int i = 0; i < Inventory.Length; i++)
-            {
-                if (Inventory[i].Type == type && Inventory[i].Count < 99)
-                {
-                    Inventory[i].Count++;
-                    UpdateInventorySlot(i);
-                    return true;
-                }
-            }
-
-            for (int i = 0; i < Inventory.Length; i++)
-            {
-                if (Inventory[i].Type == ResourceType.None)
-                {
-                    Inventory[i].Type = type;
-                    Inventory[i].Count = 1;
-                    UpdateInventorySlot(i);
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        public bool AddResource(ResourceType type, int amount = 1)
-        {
-            bool success = true;
-            for (int i = 0; i < amount; i++)
-            {
-                if (!AddToInventory(type))
-                {
-                    success = false;
-                    break;
-                }
-            }
-            return success;
-        }
-
-        public void UpdateInventorySlot(int slotIndex)
-        {
-            if (inventoryPanel == null || slotIndex < 0 || slotIndex >= 5) return;
-
-            var slotBorder = inventoryPanel.Children[slotIndex] as Border;
-            if (slotBorder == null) return;
-
-            var slot = Inventory[slotIndex];
-            slotBorder.Child = null;
-
-            if (slot.Type != ResourceType.None)
-            {
-                var stackPanel = new StackPanel();
-                string basePath = @"C:\Users\Михаил\Desktop\Game\Factorio\Factorio\textures\Resources\";
-
-                // Определяем путь к файлу в зависимости от типа ресурса
-                string filePath;
-                switch (slot.Type)
-                {
-                    case ResourceType.Iron:
-                        filePath = Path.Combine(basePath, "iron.png");
-                        break;
-                    case ResourceType.Copper:
-                        filePath = Path.Combine(basePath, "copper.png");
-                        break;
-                    case ResourceType.Coal:
-                        filePath = Path.Combine(basePath, "coal.png");
-                        break;
-                    case ResourceType.Stone:
-                        filePath = Path.Combine(basePath, "stone.png");
-                        break;
-                    case ResourceType.IronIngot:
-                        filePath = Path.Combine(basePath, "iron_ingot.png");
-                        break;
-                    case ResourceType.CopperIngot:
-                        filePath = Path.Combine(basePath, "copper_ingot.png");
-                        break;
-                    case ResourceType.Ammo:
-                        filePath = Path.Combine(basePath, "ammo.png");
-                        break;
-                    case ResourceType.Gears:
-                        filePath = Path.Combine(basePath, "gears.png");
-                        break;
-                    default:
-                        filePath = Path.Combine(basePath, "default.png");
-                        break;
-                }
-
-                Image icon = new Image
-                {
-                    Width = 40,
-                    Height = 40,
-                    Stretch = Stretch.Uniform
-                };
-
-                if (File.Exists(filePath))
-                {
-                    icon.Source = new BitmapImage(new Uri(filePath));
-                }
-                else
-                {
-                    // Простая текстовая иконка если файл не найден
-                    icon.Source = CreateSimpleIcon(slot.Type);
-                }
-
-                TextBlock countText = new TextBlock
-                {
-                    Text = slot.Count.ToString(),
-                    Foreground = Brushes.White,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    FontWeight = FontWeights.Bold,
-                    FontSize = 14
-                };
-
-                stackPanel.Children.Add(icon);
-                stackPanel.Children.Add(countText);
-                slotBorder.Child = stackPanel;
-            }
-        }
-
-        private BitmapImage CreateSimpleIcon(ResourceType type)
-        {
-            var renderTarget = new RenderTargetBitmap(40, 40, 96, 96, PixelFormats.Pbgra32);
-            var drawingVisual = new DrawingVisual();
-
-            using (var drawingContext = drawingVisual.RenderOpen())
-            {
-                drawingContext.DrawRectangle(Brushes.Gray, null, new Rect(0, 0, 40, 40));
-                drawingContext.DrawRectangle(Brushes.Black, new Pen(Brushes.Black, 2), new Rect(0, 0, 40, 40));
-
-                // Текст с названием ресурса
-                string text = type switch
-                {
-                    ResourceType.Ammo => "AM",
-                    ResourceType.Gears => "GE",
-                    _ => type.ToString().Substring(0, 2)
-                };
-                var formattedText = new FormattedText(
-                    text,
-                    System.Globalization.CultureInfo.CurrentCulture,
-                    FlowDirection.LeftToRight,
-                    new Typeface("Arial"),
-                    16,
-                    Brushes.White,
-                    1.0);
-
-                drawingContext.DrawText(formattedText, new Point(10, 10));
-            }
-
-            renderTarget.Render(drawingVisual);
-            var bitmap = new BitmapImage();
-            var encoder = new PngBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(renderTarget));
-
-            using (var stream = new MemoryStream())
-            {
-                encoder.Save(stream);
-                stream.Seek(0, SeekOrigin.Begin);
-                bitmap.BeginInit();
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.StreamSource = stream;
-                bitmap.EndInit();
-            }
-
-            return bitmap;
-        }
-
-        public void SetInventoryPanel(StackPanel panel)
-        {
-            inventoryPanel = panel;
-            for (int i = 0; i < 5; i++)
-            {
-                UpdateInventorySlot(i);
-            }
-        }
-
-        // Методы для работы с ресурсами
-        public bool HasResources(ResourceType type, int amount)
-        {
-            int total = 0;
-            foreach (var slot in Inventory)
-            {
-                if (slot.Type == type)
-                {
-                    total += slot.Count;
-                }
-            }
-            return total >= amount;
-        }
-
-        public int GetResourceCount(ResourceType type)
-        {
-            int total = 0;
-            foreach (var slot in Inventory)
-            {
-                if (slot.Type == type)
-                {
-                    total += slot.Count;
-                }
-            }
-            return total;
-        }
-
-        public bool RemoveResources(ResourceType type, int amount)
-        {
-            int remaining = amount;
-
-            for (int i = 0; i < Inventory.Length && remaining > 0; i++)
-            {
-                if (Inventory[i].Type == type)
-                {
-                    int removeAmount = Math.Min(Inventory[i].Count, remaining);
-                    Inventory[i].Count -= removeAmount;
-                    remaining -= removeAmount;
-
-                    if (Inventory[i].Count <= 0)
-                    {
-                        Inventory[i].Type = ResourceType.None;
-                        Inventory[i].Count = 0;
-                    }
-
-                    UpdateInventorySlot(i);
-                }
-            }
-
-            return remaining == 0;
-        }
-
-        public bool CanBuildSmelter()
-        {
-            return HasResources(ResourceType.Stone, 10) && HasResources(ResourceType.Coal, 5);
-        }
-
-        public bool RemoveBuildingResources()
-        {
-            bool stoneRemoved = RemoveResources(ResourceType.Stone, 10);
-            bool coalRemoved = RemoveResources(ResourceType.Coal, 5);
-            return stoneRemoved && coalRemoved;
-        }
-
-        // Метод для проверки, можно ли поставить здание в этом месте
-        public bool CanPlaceBuilding(double buildingX, double buildingY, double buildingWidth, double buildingHeight)
-        {
-            // Проверяем расстояние до игрока (не ближе 50 пикселей)
-            double playerCenterX = X + Width / 2;
-            double playerCenterY = Y + Height / 2;
-            double buildingCenterX = buildingX + buildingWidth / 2;
-            double buildingCenterY = buildingY + buildingHeight / 2;
-
-            double distance = Math.Sqrt(
-                Math.Pow(playerCenterX - buildingCenterX, 2) +
-                Math.Pow(playerCenterY - buildingCenterY, 2));
-
-            if (distance < 50) // Минимальное расстояние 50 пикселей
-            {
-                return false;
-            }
-
-            // Проверяем столкновение с игроком
-            bool collisionWithPlayer = buildingX < X + Width &&
-                                       buildingX + buildingWidth > X &&
-                                       buildingY < Y + Height &&
-                                       buildingY + buildingHeight > Y;
-
-            return !collisionWithPlayer;
         }
     }
 }

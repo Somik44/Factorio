@@ -20,7 +20,6 @@ namespace Factorio
         public bool IsBuilt { get; private set; }
         public Window InterfaceWindow { get; private set; }
 
-        // Слоты инвентаря плавильни
         public InventorySlot FuelSlot { get; private set; }
         public InventorySlot InputSlot { get; private set; }
         public InventorySlot OutputSlot { get; private set; }
@@ -34,12 +33,13 @@ namespace Factorio
         private ProgressBar progressBar;
         private DispatcherTimer updateTimer;
 
+        //Инициализация
         public Smelter(double x, double y, Player player)
         {
             X = x;
             Y = y;
-            Width = 180;  // Нормальный размер
-            Height = 150; // Нормальный размер
+            Width = 180;
+            Height = 150;
             IsBuilt = false;
             this.player = player;
 
@@ -58,9 +58,7 @@ namespace Factorio
                 Cursor = Cursors.Hand
             };
 
-            // Добавляем обработчик клика
             Sprite.MouseDown += OnSmelterClicked;
-
             UpdatePosition();
         }
 
@@ -74,7 +72,6 @@ namespace Factorio
                 return new BitmapImage(new Uri(filePath));
             }
 
-            // Если файл не найден, создаем простую текстовую заглушку
             return CreateSimplePlaceholder();
         }
 
@@ -124,7 +121,6 @@ namespace Factorio
             InputSlot = new InventorySlot { Type = ResourceType.None, Count = 0 };
             OutputSlot = new InventorySlot { Type = ResourceType.None, Count = 0 };
 
-            // Таймер для переплавки
             smeltingTimer = new DispatcherTimer();
             smeltingTimer.Interval = TimeSpan.FromSeconds(0.1);
             smeltingTimer.Tick += SmeltingTimer_Tick;
@@ -135,6 +131,7 @@ namespace Factorio
             UpdateSmelting();
         }
 
+        //Переплавка
         public void Build()
         {
             IsBuilt = true;
@@ -144,7 +141,6 @@ namespace Factorio
 
         private bool CanSmelt()
         {
-            // Проверяем, есть ли топливо и материал для переплавки
             if (FuelSlot.Type == ResourceType.Coal && FuelSlot.Count > 0)
             {
                 if (InputSlot.Type == ResourceType.Iron && InputSlot.Count > 0)
@@ -174,17 +170,14 @@ namespace Factorio
 
             if (smeltingProgress >= smeltingTime)
             {
-                // Сохраняем тип входного ресурса ПЕРЕД уменьшением
                 ResourceType inputResourceType = InputSlot.Type;
 
-                // Завершаем переплавку
                 FuelSlot.Count--;
                 if (FuelSlot.Count <= 0) FuelSlot.Type = ResourceType.None;
 
                 InputSlot.Count--;
                 if (InputSlot.Count <= 0) InputSlot.Type = ResourceType.None;
 
-                // Определяем тип слитка на выходе по СОХРАНЕННОМУ типу
                 ResourceType outputType;
                 if (inputResourceType == ResourceType.Iron)
                 {
@@ -196,7 +189,6 @@ namespace Factorio
                 }
                 else
                 {
-                    // Если тип не железо и не медь, сбрасываем прогресс
                     isSmelting = false;
                     smeltingProgress = 0;
                     return;
@@ -214,7 +206,6 @@ namespace Factorio
 
                 smeltingProgress = 0;
                 isSmelting = false;
-
                 UpdateInterface();
             }
         }
@@ -224,6 +215,7 @@ namespace Factorio
             return smeltingProgress / smeltingTime;
         }
 
+        //Интерфейс
         private void OnSmelterClicked(object sender, MouseButtonEventArgs e)
         {
             if (e.RightButton == MouseButtonState.Pressed && IsBuilt)
@@ -262,25 +254,21 @@ namespace Factorio
             Grid.SetRow(grid, 0);
             mainGrid.Children.Add(grid);
 
-            // Слот для топлива
             fuelBorder = CreateSlotBorder("Уголь", "Топливо для плавильни\n(только уголь)");
             fuelBorder.MouseDown += (s, e) => HandleSlotClick(FuelSlot, "fuel", e);
             Grid.SetColumn(fuelBorder, 0);
             grid.Children.Add(fuelBorder);
 
-            // Слот для материала
             inputBorder = CreateSlotBorder("Материал", "Сырье для переплавки\n(железо или медь)");
             inputBorder.MouseDown += (s, e) => HandleSlotClick(InputSlot, "input", e);
             Grid.SetColumn(inputBorder, 1);
             grid.Children.Add(inputBorder);
 
-            // Слот для результата
             outputBorder = CreateSlotBorder("Результат", "Готовые слитки\n(железный или медный)");
             outputBorder.MouseDown += (s, e) => HandleSlotClick(OutputSlot, "output", e);
             Grid.SetColumn(outputBorder, 2);
             grid.Children.Add(outputBorder);
 
-            // Прогресс бар
             progressBar = new ProgressBar
             {
                 Height = 20,
@@ -291,7 +279,6 @@ namespace Factorio
             Grid.SetColumnSpan(progressBar, 3);
             mainGrid.Children.Add(progressBar);
 
-            // Панель управления
             var controlPanel = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
@@ -302,7 +289,6 @@ namespace Factorio
             Grid.SetRow(controlPanel, 2);
             mainGrid.Children.Add(controlPanel);
 
-            // Кнопка "Положить все"
             var putAllButton = new Button
             {
                 Content = "Положить всё",
@@ -314,7 +300,6 @@ namespace Factorio
             putAllButton.Click += (s, e) => PutAllResources();
             controlPanel.Children.Add(putAllButton);
 
-            // Кнопка "Забрать все"
             var takeAllButton = new Button
             {
                 Content = "Забрать всё",
@@ -326,7 +311,6 @@ namespace Factorio
             takeAllButton.Click += (s, e) => TakeAllResources();
             controlPanel.Children.Add(takeAllButton);
 
-            // Таймер для обновления интерфейса
             updateTimer = new DispatcherTimer();
             updateTimer.Interval = TimeSpan.FromMilliseconds(100);
             updateTimer.Tick += UpdateTimer_Tick;
@@ -340,7 +324,6 @@ namespace Factorio
 
             InterfaceWindow.Content = mainGrid;
             InterfaceWindow.Show();
-
             UpdateInterface();
         }
 
@@ -381,7 +364,6 @@ namespace Factorio
             stackPanel.Children.Add(titleText);
 
             border.Child = stackPanel;
-
             return border;
         }
 
@@ -389,22 +371,20 @@ namespace Factorio
         {
             if (e.LeftButton == MouseButtonState.Pressed)
             {
-                // Левый клик - положить ресурс
                 PutResourceToSlot(slot, slotType);
             }
             else if (e.RightButton == MouseButtonState.Pressed)
             {
-                // Правый клик - забрать ресурс
                 TakeResourceFromSlot(slot, slotType);
             }
         }
 
+        //Ресурсы
         private void PutResourceToSlot(InventorySlot slot, string slotType)
         {
             ResourceType resourceToPut = ResourceType.None;
             int amount = 1;
 
-            // Определяем, какой ресурс можно положить в этот слот
             if (slotType == "fuel")
             {
                 resourceToPut = ResourceType.Coal;
@@ -416,7 +396,6 @@ namespace Factorio
             }
             else if (slotType == "input")
             {
-                // Проверяем, есть ли у игрока железо или медь
                 if (player.GetResourceCount(ResourceType.Iron) > 0)
                 {
                     resourceToPut = ResourceType.Iron;
@@ -433,14 +412,11 @@ namespace Factorio
             }
             else if (slotType == "output")
             {
-                // В выходной слот нельзя ничего положить
                 return;
             }
 
-            // Проверяем, можно ли положить в слот
             if (slot.Type == ResourceType.None)
             {
-                // Слот пустой, кладем ресурс
                 if (player.RemoveResources(resourceToPut, amount))
                 {
                     slot.Type = resourceToPut;
@@ -450,7 +426,6 @@ namespace Factorio
             }
             else if (slot.Type == resourceToPut && slot.Count < 99)
             {
-                // В слоте уже есть такой ресурс, добавляем
                 if (player.RemoveResources(resourceToPut, amount))
                 {
                     slot.Count += amount;
@@ -472,7 +447,6 @@ namespace Factorio
 
             int amount = 1;
 
-            // Забираем ресурс из слота
             if (player.AddResource(slot.Type, amount))
             {
                 slot.Count -= amount;
@@ -493,7 +467,6 @@ namespace Factorio
 
         private void PutAllResources()
         {
-            // Автоматически кладем все возможные ресурсы
             PutAllFuel();
             PutAllInput();
             UpdateInterface();
@@ -519,7 +492,6 @@ namespace Factorio
 
         private void PutAllInput()
         {
-            // Сначала пробуем железо
             int ironCount = player.GetResourceCount(ResourceType.Iron);
             if (ironCount > 0 && (InputSlot.Type == ResourceType.None || InputSlot.Type == ResourceType.Iron))
             {
@@ -532,12 +504,11 @@ namespace Factorio
                             InputSlot.Type = ResourceType.Iron;
 
                         InputSlot.Count += canAdd;
-                        return; // Кладем только один тип ресурса
+                        return;
                     }
                 }
             }
 
-            // Потом пробуем медь
             int copperCount = player.GetResourceCount(ResourceType.Copper);
             if (copperCount > 0 && (InputSlot.Type == ResourceType.None || InputSlot.Type == ResourceType.Copper))
             {
@@ -557,7 +528,6 @@ namespace Factorio
 
         private void TakeAllResources()
         {
-            // Забираем все из всех слотов
             TakeAllFromSlot(FuelSlot);
             TakeAllFromSlot(InputSlot);
             TakeAllFromSlot(OutputSlot);
@@ -569,7 +539,6 @@ namespace Factorio
             if (slot.Type == ResourceType.None || slot.Count <= 0)
                 return;
 
-            // Пытаемся забрать все
             int amount = slot.Count;
             while (amount > 0)
             {
@@ -580,7 +549,7 @@ namespace Factorio
                 }
                 else
                 {
-                    break; // Нет места в инвентаре
+                    break;
                 }
             }
 
@@ -591,11 +560,11 @@ namespace Factorio
             }
         }
 
+        //Отображение
         private void UpdateSlotDisplay(Border border, InventorySlot slot)
         {
             if (border?.Child is StackPanel stackPanel)
             {
-                // Оставляем заголовок, обновляем содержимое
                 if (stackPanel.Children.Count > 1)
                 {
                     stackPanel.Children.RemoveAt(1);
@@ -650,7 +619,6 @@ namespace Factorio
                 return new BitmapImage(new Uri(filePath));
             }
 
-            // Если файл не найден, создаем простую текстовую иконку
             return CreateSimpleResourceIcon(type);
         }
 
@@ -699,7 +667,6 @@ namespace Factorio
         {
             if (InterfaceWindow != null && InterfaceWindow.IsVisible)
             {
-                // Обновляем интерфейс если он открыт
                 UpdateSlotDisplay(fuelBorder, FuelSlot);
                 UpdateSlotDisplay(inputBorder, InputSlot);
                 UpdateSlotDisplay(outputBorder, OutputSlot);
@@ -709,14 +676,13 @@ namespace Factorio
             }
         }
 
-        // Добавьте в класс Smelter
+        //Работа с предметами
         public bool IsPointInside(Point point)
         {
             return point.X >= X && point.X <= X + Width &&
                    point.Y >= Y && point.Y <= Y + Height;
         }
 
-        // Метод AddItem уже есть, но обновите его логику для приоритетов:
         public bool AddItem(ResourceType type, int amount, string slotType)
         {
             InventorySlot slot = slotType switch
@@ -729,16 +695,13 @@ namespace Factorio
 
             if (slot == null) return false;
 
-            // Если слот пустой, принимаем ресурс
             if (slot.Type == ResourceType.None)
             {
-                // Для входного слота: если уже есть другой тип материала, не принимаем
                 if (slotType == "input")
                 {
-                    // Проверяем, есть ли уже материал другого типа в слоте
                     if (InputSlot.Type != ResourceType.None && InputSlot.Type != type)
                     {
-                        return false; // Уже есть другой материал
+                        return false;
                     }
                 }
 
@@ -747,7 +710,6 @@ namespace Factorio
                 UpdateInterface();
                 return true;
             }
-            // Если в слоте уже есть такой ресурс и есть место
             else if (slot.Type == type && slot.Count + amount <= 99)
             {
                 slot.Count += amount;
@@ -778,6 +740,7 @@ namespace Factorio
             return true;
         }
 
+        //Доп
         private void UpdatePosition()
         {
             Canvas.SetLeft(Sprite, X);
@@ -807,7 +770,6 @@ namespace Factorio
             InterfaceWindow?.Close();
         }
 
-        // Получить тип результата переплавки
         public ResourceType GetOutputType()
         {
             if (InputSlot.Type == ResourceType.Iron)
@@ -818,24 +780,19 @@ namespace Factorio
                 return ResourceType.None;
         }
 
-        // Получить количество топлива
         public int GetFuelCount()
         {
             return FuelSlot.Count;
         }
 
-        // Получить количество сырья
         public int GetInputCount()
         {
             return InputSlot.Count;
         }
 
-        // Получить количество результата
         public int GetOutputCount()
         {
             return OutputSlot.Count;
         }
-
-
     }
 }
