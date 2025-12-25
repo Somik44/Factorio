@@ -229,7 +229,6 @@ namespace Factorio
                     else
                     {
                         CancelBuildingMode();
-                        CancelLineMode();
                         CancelSelectConveyorForBuilding();
                     }
                     e.Handled = true;
@@ -335,12 +334,6 @@ namespace Factorio
 
             if (e.LeftButton == MouseButtonState.Pressed)
             {
-                if (isBuildingLine)
-                {
-                    HandleLineModeClick(clickPoint);
-                    return;
-                }
-
                 if (isBuildingMode)
                 {
                     HandleBuildingModeClick(clickPoint);
@@ -840,7 +833,6 @@ namespace Factorio
         {
             isDeletingMode = true;
             CancelBuildingMode();
-            CancelLineMode();
             CancelSelectConveyorForBuilding();
 
             DeleteButton.Background = Brushes.Red;
@@ -1021,7 +1013,6 @@ namespace Factorio
             selectedBuildingForConnection = building;
             isConnectingInput = isInput;
             CancelBuildingMode();
-            CancelLineMode();
             BuildHint.Visibility = Visibility.Visible;
             BuildHintText.Text = isInput ?
                 "Выберите ВХОДНОЙ конвейер (должен быть направлен К зданию)" :
@@ -1254,29 +1245,6 @@ namespace Factorio
                 return to.Y > from.Y ? Direction.Down : Direction.Up;
         }
 
-        private void HandleLineModeClick(Point clickPoint)
-        {
-            if (isLineFirstClick)
-            {
-                lineStartPoint = clickPoint;
-                isLineFirstClick = false;
-                BuildHintText.Text = "Начальная точка выбрана. Кликните на конечную точку.";
-            }
-            else
-            {
-                CancelLineMode();
-            }
-        }
-
-        private void CancelLineMode()
-        {
-            isBuildingLine = false;
-            isLineFirstClick = true;
-            foreach (var conveyor in linePreviewConveyors)
-                conveyor.RemoveFromCanvas(GameCanvas);
-            linePreviewConveyors.Clear();
-            BuildHint.Visibility = Visibility.Collapsed;
-        }
 
         private Conveyor FindConveyorAtPoint(Point point)
         {

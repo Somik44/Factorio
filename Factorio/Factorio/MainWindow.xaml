@@ -52,7 +52,6 @@
             </Button>
         </Grid>
 
-        <!-- Панель инвентаря -->
         <Border HorizontalAlignment="Center" 
                 VerticalAlignment="Bottom" 
                 Margin="0,0,0,20" 
@@ -60,7 +59,6 @@
                 CornerRadius="10"
                 Padding="10">
             <StackPanel x:Name="InventoryPanel" Orientation="Horizontal">
-                <!-- 5 слотов инвентаря -->
                 <Border x:Name="InventorySlot1" 
                         Width="60" 
                         Height="60" 
@@ -99,7 +97,6 @@
             </StackPanel>
         </Border>
 
-        <!-- Меню постройки (скрыто по умолчанию) -->
         <Border x:Name="BuildMenu" 
                 Visibility="Collapsed"
                 HorizontalAlignment="Center" 
@@ -117,7 +114,6 @@
                            HorizontalAlignment="Center"
                            Margin="0,0,0,10"/>
 
-                <!-- Кнопка постройки плавильни -->
                 <Button x:Name="BuildSmelterButton"
                         Content="Плавильня (10 камня + 5 угля)"
                         Width="350"
@@ -138,7 +134,6 @@
                     </Button.ToolTip>
                 </Button>
 
-                <!-- В меню постройки добавьте эту кнопку после кнопки плавильни -->
                 <Button x:Name="BuildMinerButton"
                         Content="Добытчик (5 жел.слитков + 5 мед.слитков)"
                         Width="350"
@@ -181,7 +176,6 @@
                     </Button.ToolTip>
                 </Button>
 
-                <!-- Кнопка постройки одного конвейера -->
                 <Button x:Name="BuildConveyorButton"
                         Content="Конвейер (2 железных слитка)"
                         Width="350"
@@ -203,7 +197,6 @@
                     </Button.ToolTip>
                 </Button>
 
-                <!-- Кнопка постройки пушки -->
                 <Button x:Name="BuildCannonButton" Content="Пушка (5 жел.слитков + 6 деталей + 3 патрона)" 
                         Click="BuildCannonButton_Click" 
                         Margin="5" 
@@ -226,16 +219,15 @@
                 </Button>
 
 
-                <!-- В меню постройки добавьте -->
                 <Button x:Name="ToggleGridButton"
-        Content="Сетка: Вкл"
-        Width="350"
-        Height="30"
-        Background="#FF333333"
-        Foreground="White"
-        BorderBrush="Gray"
-        Margin="0,5"
-        Click="ToggleGridButton_Click">
+                        Content="Сетка: Вкл"
+                        Width="350"
+                        Height="30"
+                        Background="#FF333333"
+                        Foreground="White"
+                        BorderBrush="Gray"
+                        Margin="0,5"
+                        Click="ToggleGridButton_Click">
                     <Button.ToolTip>
                         <ToolTip>
                             <StackPanel>
@@ -256,7 +248,6 @@
             </StackPanel>
         </Border>
 
-        <!-- Подсказка при постройке -->
         <Border x:Name="BuildHint" 
                 Visibility="Collapsed"
                 HorizontalAlignment="Center" 
